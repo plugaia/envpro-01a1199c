@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, TrendingUp, TrendingDown, DollarSign, FileText, Users, Calendar, CheckCircle } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, DollarSign, FileText, Users, Calendar, CheckCircle, Award, Crown, Medal } from "lucide-react";
 
 const Relatorios = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("30");
@@ -28,6 +28,75 @@ const Relatorios = () => {
     { month: "Abr", proposals: 19, approved: 10, value: 212000 },
     { month: "Mai", proposals: 25, approved: 15, value: 356000 },
     { month: "Jun", proposals: 28, approved: 17, value: 394000 },
+  ];
+
+  // Lawyer performance data
+  const lawyerPerformance = [
+    {
+      id: "1",
+      name: "Dr. Giuvana Vargas",
+      email: "giuvana.vargas@wonebank.com.br",
+      totalProposals: 45,
+      approvedProposals: 28,
+      rejectedProposals: 8,
+      pendingProposals: 9,
+      totalValue: 890000,
+      approvedValue: 542000,
+      avgValue: 19778,
+      conversionRate: 62.2
+    },
+    {
+      id: "2", 
+      name: "Dr. Eduardo Santos",
+      email: "eduardo.santos@legalprop.com",
+      totalProposals: 38,
+      approvedProposals: 22,
+      rejectedProposals: 6,
+      pendingProposals: 10,
+      totalValue: 675000,
+      approvedValue: 412000,
+      avgValue: 17763,
+      conversionRate: 57.9
+    },
+    {
+      id: "3",
+      name: "Dra. Marina Costa",  
+      email: "marina.costa@legalprop.com",
+      totalProposals: 32,
+      approvedProposals: 19,
+      rejectedProposals: 4,
+      pendingProposals: 9,
+      totalValue: 548000,
+      approvedValue: 334000,
+      avgValue: 17125,
+      conversionRate: 59.4
+    },
+    {
+      id: "4",
+      name: "Dr. Roberto Silva",
+      email: "roberto.silva@legalprop.com", 
+      totalProposals: 28,
+      approvedProposals: 14,
+      rejectedProposals: 3,
+      pendingProposals: 11,
+      totalValue: 412000,
+      approvedValue: 235000,
+      avgValue: 14714,
+      conversionRate: 50.0
+    },
+    {
+      id: "5",
+      name: "Dra. Ana Oliveira",
+      email: "ana.oliveira@legalprop.com",
+      totalProposals: 13,
+      approvedProposals: 6,
+      rejectedProposals: 1,
+      pendingProposals: 6,
+      totalValue: 155000,
+      approvedValue: 83000,
+      avgValue: 11923,
+      conversionRate: 46.2
+    }
   ];
 
   const formatCurrency = (value: number) => {
@@ -265,6 +334,140 @@ const Relatorios = () => {
                 </CardContent>
               </Card>
 
+              {/* Lawyer Performance */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-primary" />
+                    Ranking de Advogados
+                  </CardTitle>
+                  <CardDescription>Performance dos advogados por número de propostas e taxa de aprovação</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {lawyerPerformance.map((lawyer, index) => (
+                      <div key={lawyer.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+                            {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
+                            {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
+                            {index === 2 && <Medal className="w-4 h-4 text-amber-600" />}
+                            {index > 2 && <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>}
+                          </div>
+                          <div>
+                            <div className="font-medium text-foreground">{lawyer.name}</div>
+                            <div className="text-xs text-muted-foreground">{lawyer.email}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-6 text-sm">
+                          <div className="text-center">
+                            <div className="font-bold text-primary">{lawyer.totalProposals}</div>
+                            <div className="text-xs text-muted-foreground">Propostas</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-bold text-success">{lawyer.approvedProposals}</div>
+                            <div className="text-xs text-muted-foreground">Aprovadas</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-bold text-warning">{formatPercentage(lawyer.conversionRate)}</div>
+                            <div className="text-xs text-muted-foreground">Taxa</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-bold">{formatCurrency(lawyer.totalValue)}</div>
+                            <div className="text-xs text-muted-foreground">Valor Total</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top Performers */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Crown className="w-5 h-5 text-yellow-500" />
+                      Mais Propostas
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {lawyerPerformance
+                        .sort((a, b) => b.totalProposals - a.totalProposals)
+                        .slice(0, 3)
+                        .map((lawyer, index) => (
+                          <div key={lawyer.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-muted-foreground w-4">#{index + 1}</span>
+                              <span className="text-sm font-medium">{lawyer.name.split(' ')[1]} {lawyer.name.split(' ')[2]}</span>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {lawyer.totalProposals} propostas
+                            </Badge>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-success" />
+                      Maior Taxa de Aprovação
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {lawyerPerformance
+                        .sort((a, b) => b.conversionRate - a.conversionRate)
+                        .slice(0, 3)
+                        .map((lawyer, index) => (
+                          <div key={lawyer.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-muted-foreground w-4">#{index + 1}</span>
+                              <span className="text-sm font-medium">{lawyer.name.split(' ')[1]} {lawyer.name.split(' ')[2]}</span>
+                            </div>
+                            <Badge className="bg-success text-success-foreground text-xs">
+                              {formatPercentage(lawyer.conversionRate)}
+                            </Badge>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-primary" />
+                      Maior Valor Total
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {lawyerPerformance
+                        .sort((a, b) => b.totalValue - a.totalValue)
+                        .slice(0, 3)
+                        .map((lawyer, index) => (
+                          <div key={lawyer.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-muted-foreground w-4">#{index + 1}</span>
+                              <span className="text-sm font-medium">{lawyer.name.split(' ')[1]} {lawyer.name.split(' ')[2]}</span>
+                            </div>
+                            <Badge className="bg-primary text-primary-foreground text-xs">
+                              {formatCurrency(lawyer.totalValue)}
+                            </Badge>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
               {/* Insights */}
               <Card>
                 <CardHeader>
@@ -298,11 +501,11 @@ const Relatorios = () => {
                   
                   <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <DollarSign className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                      <Award className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-medium text-primary">Oportunidade de crescimento</h4>
+                        <h4 className="font-medium text-primary">Performance dos advogados</h4>
                         <p className="text-sm text-muted-foreground">
-                          O valor médio das propostas pode ser otimizado. Analise propostas de maior valor para identificar padrões.
+                          Dr. Giuvana Vargas lidera com {lawyerPerformance[0].totalProposals} propostas e {formatPercentage(lawyerPerformance[0].conversionRate)} de aprovação.
                         </p>
                       </div>
                     </div>
