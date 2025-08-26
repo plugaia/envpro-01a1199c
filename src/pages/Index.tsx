@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { useState, useMemo } from "react";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
-import { ProposalCard, type Proposal } from "@/components/ProposalCard";
+import { type Proposal } from "@/components/ProposalCard";
 import { ProposalForm } from "@/components/ProposalForm";
+import { ProposalFilters, type FilterOptions } from "@/components/ProposalFilters";
+import { ProposalList } from "@/components/ProposalList";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock data for demonstration
@@ -56,6 +58,15 @@ const Index = () => {
   const { toast } = useToast();
   const [proposals, setProposals] = useState<Proposal[]>(mockProposals);
   const [showProposalForm, setShowProposalForm] = useState(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    search: "",
+    status: [],
+    receiverType: [],
+    dateFrom: undefined,
+    dateTo: undefined,
+    minValue: undefined,
+    maxValue: undefined,
+  });
 
   const handleNewProposal = () => {
     setShowProposalForm(true);
@@ -123,6 +134,55 @@ Equipe LegalProp 📋⚖️`
     window.open(`/proposta/${proposal.id}`, '_blank');
   };
 
+  // Filter proposals based on active filters
+  const filteredProposals = useMemo(() => {
+    return proposals.filter((proposal) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          proposal.clientName.toLowerCase().includes(searchLower) ||
+          proposal.clientEmail.toLowerCase().includes(searchLower) ||
+          (proposal.processNumber && proposal.processNumber.toLowerCase().includes(searchLower)) ||
+          (proposal.organizationName && proposal.organizationName.toLowerCase().includes(searchLower));
+        
+        if (!matchesSearch) return false;
+      }
+
+      // Status filter
+      if (filters.status.length > 0 && !filters.status.includes(proposal.status)) {
+        return false;
+      }
+
+      // Receiver type filter
+      if (filters.receiverType.length > 0 && !filters.receiverType.includes(proposal.receiverType)) {
+        return false;
+      }
+
+      // Date range filter
+      if (filters.dateFrom && proposal.createdAt < filters.dateFrom) {
+        return false;
+      }
+      if (filters.dateTo) {
+        const endOfDay = new Date(filters.dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (proposal.createdAt > endOfDay) {
+          return false;
+        }
+      }
+
+      // Value range filter
+      if (filters.minValue && proposal.proposalValue < filters.minValue) {
+        return false;
+      }
+      if (filters.maxValue && proposal.proposalValue > filters.maxValue) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [proposals, filters]);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -142,31 +202,21 @@ Equipe LegalProp 📋⚖️`
                 </p>
               </div>
 
-              {proposals.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="max-w-md mx-auto">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl">📄</span>
-                    </div>
-                    <h3 className="text-lg font-semibold mb-2">Nenhuma proposta encontrada</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Comece criando sua primeira proposta jurídica
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {proposals.map((proposal) => (
-                    <ProposalCard
-                      key={proposal.id}
-                      proposal={proposal}
-                      onSendEmail={handleSendEmail}
-                      onSendWhatsApp={handleSendWhatsApp}
-                      onView={handleViewProposal}
-                    />
-                  ))}
-                </div>
-              )}
+              {/* Filters */}
+              <ProposalFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                totalCount={proposals.length}
+                filteredCount={filteredProposals.length}
+              />
+
+              {/* Proposals List */}
+              <ProposalList
+                proposals={filteredProposals}
+                onSendEmail={handleSendEmail}
+                onSendWhatsApp={handleSendWhatsApp}
+                onView={handleViewProposal}
+              />
             </div>
           </main>
         </div>
