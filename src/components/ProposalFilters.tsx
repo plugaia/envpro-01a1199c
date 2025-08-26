@@ -129,8 +129,8 @@ export function ProposalFilters({
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Results Count and Filter Tags */}
+        <div className="flex flex-wrap items-center gap-4 mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>
               Mostrando {filteredCount} de {totalCount} propostas
@@ -141,38 +141,38 @@ export function ProposalFilters({
               </Badge>
             )}
           </div>
-        </div>
 
-        {/* Status Filters */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className="text-sm font-medium text-muted-foreground mr-2">Status:</span>
-          {statusOptions.map((status) => (
-            <Badge
-              key={status.value}
-              variant={filters.status.includes(status.value) ? "default" : "outline"}
-              className={`cursor-pointer transition-all ${
-                filters.status.includes(status.value) ? status.color : ""
-              }`}
-              onClick={() => toggleStatus(status.value)}
-            >
-              {status.label}
-            </Badge>
-          ))}
-        </div>
+          {/* Status Filters */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Status:</span>
+            {statusOptions.map((status) => (
+              <Badge
+                key={status.value}
+                variant={filters.status.includes(status.value) ? "default" : "outline"}
+                className={`cursor-pointer transition-all text-xs ${
+                  filters.status.includes(status.value) ? status.color : ""
+                }`}
+                onClick={() => toggleStatus(status.value)}
+              >
+                {status.label}
+              </Badge>
+            ))}
+          </div>
 
-        {/* Receiver Type Filters */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className="text-sm font-medium text-muted-foreground mr-2">Tipo:</span>
-          {receiverTypeOptions.map((type) => (
-            <Badge
-              key={type.value}
-              variant={filters.receiverType.includes(type.value) ? "default" : "outline"}
-              className="cursor-pointer transition-all"
-              onClick={() => toggleReceiverType(type.value)}
-            >
-              {type.label}
-            </Badge>
-          ))}
+          {/* Receiver Type Filters */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Tipo:</span>
+            {receiverTypeOptions.map((type) => (
+              <Badge
+                key={type.value}
+                variant={filters.receiverType.includes(type.value) ? "default" : "outline"}
+                className="cursor-pointer transition-all text-xs"
+                onClick={() => toggleReceiverType(type.value)}
+              >
+                {type.label}
+              </Badge>
+            ))}
+          </div>
         </div>
 
         {/* Advanced Filters */}
