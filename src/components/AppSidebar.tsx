@@ -58,11 +58,13 @@ export function AppSidebar() {
         </div>
 
         <SidebarGroup className="bg-sidebar">
-          <SidebarGroupLabel className="text-sidebar-foreground/70 px-4 py-2 text-xs font-medium">
+          <SidebarGroupLabel className={`text-sidebar-foreground/70 text-xs font-medium ${
+            collapsed ? "sr-only" : "px-4 py-2"
+          }`}>
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent className="bg-sidebar">
-            <SidebarMenu className="space-y-1 px-2">
+            <SidebarMenu className={`space-y-1 ${collapsed ? "px-1" : "px-2"}`}>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
@@ -73,14 +75,18 @@ export function AppSidebar() {
                       to={item.url} 
                       end 
                       className={({ isActive }) => 
-                        `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        `flex items-center rounded-lg text-sm font-medium transition-colors ${
+                          collapsed 
+                            ? "justify-center p-2 mx-1" 
+                            : "gap-3 px-3 py-2"
+                        } ${
                           isActive 
                             ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" 
                             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         }`
                       }
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
