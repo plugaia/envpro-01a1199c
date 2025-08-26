@@ -7,6 +7,7 @@ import { ProposalForm } from "@/components/ProposalForm";
 import { ProposalFilters, type FilterOptions } from "@/components/ProposalFilters";
 import { ProposalList } from "@/components/ProposalList";
 import { useToast } from "@/hooks/use-toast";
+import { type Client } from "@/types/client";
 
 // Mock data for demonstration
 const mockProposals: Proposal[] = [
@@ -80,6 +81,14 @@ const Index = () => {
     setProposals(prev => [newProposal, ...prev]);
   };
 
+  const handleAddClient = (clientData: Omit<Client, 'id' | 'createdAt'>) => {
+    // In a real app, this would save to database
+    toast({
+      title: "Cliente adicionado",
+      description: `${clientData.firstName} ${clientData.lastName} foi adicionado com sucesso.`,
+    });
+  };
+
   const handleSendEmail = (proposal: Proposal) => {
     // Create professional email with proposal link
     const subject = encodeURIComponent(`Proposta Jurídica - ${proposal.clientName}`);
@@ -109,7 +118,7 @@ Equipe LegalProp`
   };
 
   const handleSendWhatsApp = (proposal: Proposal) => {
-    // Create WhatsApp message with proposal link
+    // Create WhatsApp message with proposal link using client's WhatsApp number
     const message = encodeURIComponent(
       `Olá ${proposal.clientName}! 
 
@@ -121,11 +130,19 @@ ${window.location.origin}/proposta/${proposal.id}
 Equipe LegalProp 📋⚖️`
     );
     
-    window.open(`https://wa.me/?text=${message}`, '_blank');
+    // Use client's WhatsApp number if available, otherwise fallback to generic WhatsApp
+    const whatsappNumber = (proposal as any).clientWhatsapp || "";
+    const whatsappUrl = whatsappNumber 
+      ? `https://wa.me/${whatsappNumber.replace(/[^\d]/g, '')}?text=${message}`
+      : `https://wa.me/?text=${message}`;
+    
+    window.open(whatsappUrl, '_blank');
     
     toast({
       title: "WhatsApp aberto", 
-      description: `Mensagem preparada para ${proposal.clientName}`,
+      description: whatsappNumber 
+        ? `Conversa iniciada com ${proposal.clientName}`
+        : `Mensagem preparada para ${proposal.clientName}`,
     });
   };
 
@@ -225,6 +242,7 @@ Equipe LegalProp 📋⚖️`
           <ProposalForm
             onClose={() => setShowProposalForm(false)}
             onSubmit={handleSubmitProposal}
+            onAddClient={handleAddClient}
           />
         )}
       </div>
