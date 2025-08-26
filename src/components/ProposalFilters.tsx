@@ -29,9 +29,24 @@ interface ProposalFiltersProps {
 }
 
 const statusOptions = [
-  { value: "pendente", label: "Pendente", color: "bg-warning text-warning-foreground" },
-  { value: "aprovada", label: "Aprovada", color: "bg-success text-success-foreground" },
-  { value: "rejeitada", label: "Rejeitada", color: "bg-destructive text-destructive-foreground" },
+  { 
+    value: "pendente", 
+    label: "Pendente", 
+    color: "bg-warning text-warning-foreground",
+    dotColor: "bg-yellow-500"
+  },
+  { 
+    value: "aprovada", 
+    label: "Aprovada", 
+    color: "bg-success text-success-foreground",
+    dotColor: "bg-green-500"
+  },
+  { 
+    value: "rejeitada", 
+    label: "Rejeitada", 
+    color: "bg-destructive text-destructive-foreground",
+    dotColor: "bg-red-500"
+  },
 ];
 
 const receiverTypeOptions = [
@@ -149,11 +164,12 @@ export function ProposalFilters({
               <Badge
                 key={status.value}
                 variant={filters.status.includes(status.value) ? "default" : "outline"}
-                className={`cursor-pointer transition-all text-xs ${
+                className={`cursor-pointer transition-all text-xs flex items-center gap-1.5 ${
                   filters.status.includes(status.value) ? status.color : ""
                 }`}
                 onClick={() => toggleStatus(status.value)}
               >
+                <div className={`w-2 h-2 rounded-full ${status.dotColor}`} />
                 {status.label}
               </Badge>
             ))}
