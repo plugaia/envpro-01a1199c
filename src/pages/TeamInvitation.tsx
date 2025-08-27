@@ -15,10 +15,8 @@ interface InvitationData {
   email: string;
   first_name: string;
   last_name: string;
-  whatsapp_number?: string;
   company_name: string;
-  invited_by_name: string;
-  expires_at: string;
+  is_valid: boolean;
 }
 
 export default function TeamInvitation() {
@@ -47,49 +45,26 @@ export default function TeamInvitation() {
 
   const fetchInvitation = async () => {
     try {
-      // First get the invitation data
+      // Use the secure function to get invitation details
       const { data: invitationData, error: invitationError } = await supabase
-        .from('team_invitations')
-        .select('*, companies!inner(name)')
-        .eq('invitation_token', token)
-        .eq('status', 'pending')
-        .gte('expires_at', new Date().toISOString())
-        .single();
+        .rpc('get_invitation_for_registration', { p_invitation_token: token });
 
       if (invitationError) throw invitationError;
 
-      if (!invitationData) {
+      if (!invitationData || invitationData.length === 0 || !invitationData[0].is_valid) {
         throw new Error('Convite inválido ou expirado');
       }
 
-      // Get the inviter's profile separately
-      const { data: inviterProfile, error: inviterError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('user_id', invitationData.invited_by)
-        .single();
-
-      if (inviterError) {
-        console.error('Error fetching inviter profile:', inviterError);
-      }
-
+      const invitation = invitationData[0];
       setInvitation({
-        id: invitationData.id,
-        email: invitationData.email,
-        first_name: invitationData.first_name,
-        last_name: invitationData.last_name,
-        whatsapp_number: invitationData.whatsapp_number,
-        company_name: invitationData.companies.name,
-        invited_by_name: inviterProfile 
-          ? `${inviterProfile.first_name} ${inviterProfile.last_name}`
-          : 'Administrador',
-        expires_at: invitationData.expires_at
+        id: invitation.invitation_id,
+        email: invitation.email,
+        first_name: invitation.first_name,
+        last_name: invitation.last_name,
+        company_name: invitation.company_name,
+        is_valid: invitation.is_valid
       });
 
-      // Pre-fill WhatsApp if provided in invitation
-      if (invitationData.whatsapp_number) {
-        setFormData(prev => ({ ...prev, whatsappNumber: invitationData.whatsapp_number }));
-      }
     } catch (error) {
       console.error('Error fetching invitation:', error);
       toast({
@@ -125,7 +100,7 @@ export default function TeamInvitation() {
         lastName: invitation.last_name,
         companyName: invitation.company_name,
         cnpj: '', // Will be filled from existing company
-        responsiblePhone: formData.whatsappNumber || invitation.whatsapp_number || ''
+        responsiblePhone: formData.whatsappNumber || ''
       });
 
       if (signUpError) throw signUpError;
@@ -210,10 +185,7 @@ export default function TeamInvitation() {
             <div className="space-y-1 text-sm">
               <p><strong>Nome:</strong> {invitation.first_name} {invitation.last_name}</p>
               <p><strong>Email:</strong> {invitation.email}</p>
-              <p><strong>Convidado por:</strong> {invitation.invited_by_name}</p>
-              {invitation.whatsapp_number && (
-                <p><strong>WhatsApp:</strong> {invitation.whatsapp_number}</p>
-              )}
+              <p><strong>Empresa:</strong> {invitation.company_name}</p>
             </div>
           </div>
 

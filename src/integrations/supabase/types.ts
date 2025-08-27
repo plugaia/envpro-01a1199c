@@ -333,6 +333,17 @@ export type Database = {
           invitation_token: string
         }[]
       }
+      get_invitation_for_registration: {
+        Args: { p_invitation_token: string }
+        Returns: {
+          company_name: string
+          email: string
+          first_name: string
+          invitation_id: string
+          is_valid: boolean
+          last_name: string
+        }[]
+      }
       get_proposal_by_token: {
         Args: { access_token: string }
         Returns: {
