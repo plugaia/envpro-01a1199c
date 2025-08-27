@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,13 +9,25 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, Plus, Search, Edit, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Client, mockClients } from "@/types/client";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+interface Client {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  whatsapp: string;
+  createdAt: Date;
+}
+
 const Clientes = () => {
   const { toast } = useToast();
-  const [clients, setClients] = useState<Client[]>(mockClients);
+  const { user } = useAuth();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [showEditClientForm, setShowEditClientForm] = useState(false);
@@ -32,6 +44,58 @@ const Clientes = () => {
     email: "",
     whatsapp: "",
   });
+
+  useEffect(() => {
+    if (user) {
+      fetchClients();
+    }
+  }, [user]);
+
+  const fetchClients = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      // Fetch unique clients from proposals
+      const { data: proposals, error } = await supabase
+        .from('proposals')
+        .select('client_name, client_email, client_phone, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Create unique clients list
+      const uniqueClients = new Map();
+      proposals?.forEach(proposal => {
+        const key = proposal.client_email;
+        if (!uniqueClients.has(key)) {
+          const [firstName, ...lastNameParts] = proposal.client_name.split(' ');
+          const lastName = lastNameParts.join(' ') || '';
+          
+          uniqueClients.set(key, {
+            id: key, // Use email as unique identifier
+            firstName,
+            lastName,
+            email: proposal.client_email,
+            whatsapp: proposal.client_phone || '',
+            createdAt: new Date(proposal.created_at)
+          });
+        }
+      });
+
+      setClients(Array.from(uniqueClients.values()));
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast({
+        title: "Erro ao carregar clientes",
+        description: "Não foi possível carregar a lista de clientes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddClient = (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,6 +219,11 @@ const Clientes = () => {
           </header>
           
           <main className="flex-1 p-6">
+            {loading ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
             <div className="max-w-7xl mx-auto space-y-6">
               
               {/* Stats Cards */}
@@ -466,6 +535,7 @@ const Clientes = () => {
               )}
 
             </div>
+            )}
           </main>
         </div>
       </div>

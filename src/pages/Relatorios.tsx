@@ -1,103 +1,169 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, TrendingUp, TrendingDown, DollarSign, FileText, Users, Calendar, CheckCircle, Award, Crown, Medal } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Relatorios = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState("30");
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalProposals: 0,
+    approvedProposals: 0,
+    pendingProposals: 0,
+    rejectedProposals: 0,
+    totalValue: 0,
+    approvedValue: 0,
+    avgValue: 0,
+    conversionRate: 0
+  });
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [creatorPerformance, setCreatorPerformance] = useState<any[]>([]);
 
-  // Mock data for reports
-  const stats = {
-    totalProposals: 156,
-    approvedProposals: 89,
-    pendingProposals: 45,
-    rejectedProposals: 22,
-    totalValue: 2580000,
-    approvedValue: 1456000,
-    avgValue: 16538,
-    conversionRate: 57.1
-  };
-
-  const monthlyData = [
-    { month: "Jan", proposals: 12, approved: 8, value: 185000 },
-    { month: "Fev", proposals: 18, approved: 11, value: 245000 },
-    { month: "Mar", proposals: 22, approved: 13, value: 298000 },
-    { month: "Abr", proposals: 19, approved: 10, value: 212000 },
-    { month: "Mai", proposals: 25, approved: 15, value: 356000 },
-    { month: "Jun", proposals: 28, approved: 17, value: 394000 },
-  ];
-
-  // Lawyer performance data
-  const lawyerPerformance = [
-    {
-      id: "1",
-      name: "Dr. Giuvana Vargas",
-      email: "giuvana.vargas@wonebank.com.br",
-      totalProposals: 45,
-      approvedProposals: 28,
-      rejectedProposals: 8,
-      pendingProposals: 9,
-      totalValue: 890000,
-      approvedValue: 542000,
-      avgValue: 19778,
-      conversionRate: 62.2
-    },
-    {
-      id: "2", 
-      name: "Dr. Eduardo Santos",
-      email: "eduardo.santos@legalprop.com",
-      totalProposals: 38,
-      approvedProposals: 22,
-      rejectedProposals: 6,
-      pendingProposals: 10,
-      totalValue: 675000,
-      approvedValue: 412000,
-      avgValue: 17763,
-      conversionRate: 57.9
-    },
-    {
-      id: "3",
-      name: "Dra. Marina Costa",  
-      email: "marina.costa@legalprop.com",
-      totalProposals: 32,
-      approvedProposals: 19,
-      rejectedProposals: 4,
-      pendingProposals: 9,
-      totalValue: 548000,
-      approvedValue: 334000,
-      avgValue: 17125,
-      conversionRate: 59.4
-    },
-    {
-      id: "4",
-      name: "Dr. Roberto Silva",
-      email: "roberto.silva@legalprop.com", 
-      totalProposals: 28,
-      approvedProposals: 14,
-      rejectedProposals: 3,
-      pendingProposals: 11,
-      totalValue: 412000,
-      approvedValue: 235000,
-      avgValue: 14714,
-      conversionRate: 50.0
-    },
-    {
-      id: "5",
-      name: "Dra. Ana Oliveira",
-      email: "ana.oliveira@legalprop.com",
-      totalProposals: 13,
-      approvedProposals: 6,
-      rejectedProposals: 1,
-      pendingProposals: 6,
-      totalValue: 155000,
-      approvedValue: 83000,
-      avgValue: 11923,
-      conversionRate: 46.2
+  useEffect(() => {
+    if (user) {
+      fetchReportsData();
     }
-  ];
+  }, [user, selectedPeriod]);
+
+  const fetchReportsData = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      // Calculate date range based on selected period
+      const today = new Date();
+      const startDate = new Date();
+      startDate.setDate(today.getDate() - parseInt(selectedPeriod));
+
+      // Fetch proposals for the selected period
+      const { data: proposals, error } = await supabase
+        .from('proposals')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Calculate basic stats
+      const totalProposals = proposals?.length || 0;
+      const approvedProposals = proposals?.filter(p => p.status === 'aprovada').length || 0;
+      const pendingProposals = proposals?.filter(p => p.status === 'pendente').length || 0;
+      const rejectedProposals = proposals?.filter(p => p.status === 'rejeitada').length || 0;
+      
+      const totalValue = proposals?.reduce((sum, p) => sum + parseFloat(p.proposal_value.toString()), 0) || 0;
+      const approvedValue = proposals?.filter(p => p.status === 'aprovada')
+        .reduce((sum, p) => sum + parseFloat(p.proposal_value.toString()), 0) || 0;
+      const avgValue = totalProposals > 0 ? totalValue / totalProposals : 0;
+      const conversionRate = totalProposals > 0 ? (approvedProposals / totalProposals) * 100 : 0;
+
+      setStats({
+        totalProposals,
+        approvedProposals,
+        pendingProposals,
+        rejectedProposals,
+        totalValue,
+        approvedValue,
+        avgValue,
+        conversionRate
+      });
+
+      // Calculate monthly data (last 6 months)
+      const monthlyStats = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthStart = new Date();
+        monthStart.setMonth(monthStart.getMonth() - i);
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        
+        const monthEnd = new Date();
+        monthEnd.setMonth(monthEnd.getMonth() - i + 1);
+        monthEnd.setDate(0);
+        monthEnd.setHours(23, 59, 59, 999);
+
+        const monthProposals = proposals?.filter(p => {
+          const proposalDate = new Date(p.created_at);
+          return proposalDate >= monthStart && proposalDate <= monthEnd;
+        }) || [];
+
+        const monthApproved = monthProposals.filter(p => p.status === 'aprovada').length;
+        const monthValue = monthProposals.reduce((sum, p) => sum + parseFloat(p.proposal_value.toString()), 0);
+
+        monthlyStats.push({
+          month: monthStart.toLocaleDateString('pt-BR', { month: 'short' }),
+          proposals: monthProposals.length,
+          approved: monthApproved,
+          value: monthValue
+        });
+      }
+      setMonthlyData(monthlyStats);
+
+      // Calculate creator performance
+      const creatorStats = new Map();
+      proposals?.forEach(proposal => {
+        const creatorId = proposal.created_by || 'sistema';
+        const creatorName = 'Sistema'; // Simplified for now
+        
+        if (!creatorStats.has(creatorId)) {
+          creatorStats.set(creatorId, {
+            id: creatorId,
+            name: creatorName,
+            email: `${creatorName.toLowerCase()}@legalprop.com`,
+            totalProposals: 0,
+            approvedProposals: 0,
+            rejectedProposals: 0,
+            pendingProposals: 0,
+            totalValue: 0,
+            approvedValue: 0,
+            avgValue: 0,
+            conversionRate: 0
+          });
+        }
+
+        const creator = creatorStats.get(creatorId);
+        creator.totalProposals++;
+        creator.totalValue += parseFloat(proposal.proposal_value.toString());
+
+        if (proposal.status === 'aprovada') {
+          creator.approvedProposals++;
+          creator.approvedValue += parseFloat(proposal.proposal_value.toString());
+        } else if (proposal.status === 'rejeitada') {
+          creator.rejectedProposals++;
+        } else if (proposal.status === 'pendente') {
+          creator.pendingProposals++;
+        }
+      });
+
+      // Calculate derived stats for creators
+      const creatorArray = Array.from(creatorStats.values()).map(creator => ({
+        ...creator,
+        avgValue: creator.totalProposals > 0 ? creator.totalValue / creator.totalProposals : 0,
+        conversionRate: creator.totalProposals > 0 ? (creator.approvedProposals / creator.totalProposals) * 100 : 0
+      }));
+
+      // Sort by total proposals descending
+      creatorArray.sort((a, b) => b.totalProposals - a.totalProposals);
+      setCreatorPerformance(creatorArray);
+
+    } catch (error) {
+      console.error('Error fetching reports data:', error);
+      toast({
+        title: "Erro ao carregar relatórios",
+        description: "Não foi possível carregar os dados dos relatórios.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -146,6 +212,11 @@ const Relatorios = () => {
           </header>
           
           <main className="flex-1 p-6">
+            {loading ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
             <div className="max-w-7xl mx-auto space-y-6">
               
               {/* KPI Cards */}
@@ -231,7 +302,7 @@ const Relatorios = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{stats.approvedProposals}</span>
                         <Badge className="bg-success text-success-foreground">
-                          {formatPercentage((stats.approvedProposals / stats.totalProposals) * 100)}
+                          {stats.totalProposals > 0 ? formatPercentage((stats.approvedProposals / stats.totalProposals) * 100) : '0.0%'}
                         </Badge>
                       </div>
                     </div>
@@ -244,7 +315,7 @@ const Relatorios = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{stats.pendingProposals}</span>
                         <Badge className="bg-warning text-warning-foreground">
-                          {formatPercentage((stats.pendingProposals / stats.totalProposals) * 100)}
+                          {stats.totalProposals > 0 ? formatPercentage((stats.pendingProposals / stats.totalProposals) * 100) : '0.0%'}
                         </Badge>
                       </div>
                     </div>
@@ -257,7 +328,7 @@ const Relatorios = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{stats.rejectedProposals}</span>
                         <Badge className="bg-destructive text-destructive-foreground">
-                          {formatPercentage((stats.rejectedProposals / stats.totalProposals) * 100)}
+                          {stats.totalProposals > 0 ? formatPercentage((stats.rejectedProposals / stats.totalProposals) * 100) : '0.0%'}
                         </Badge>
                       </div>
                     </div>
@@ -325,7 +396,7 @@ const Relatorios = () => {
                         <div className="text-right">
                           <div className="font-bold text-primary">{formatCurrency(data.value)}</div>
                           <div className="text-xs text-muted-foreground">
-                            {formatPercentage((data.approved / data.proposals) * 100)} aprovação
+                            {data.proposals > 0 ? formatPercentage((data.approved / data.proposals) * 100) : '0.0%'} aprovação
                           </div>
                         </div>
                       </div>
@@ -345,40 +416,40 @@ const Relatorios = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {lawyerPerformance.map((lawyer, index) => (
-                      <div key={lawyer.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
-                            {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
-                            {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
-                            {index === 2 && <Medal className="w-4 h-4 text-amber-600" />}
-                            {index > 2 && <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>}
-                          </div>
-                          <div>
-                            <div className="font-medium text-foreground">{lawyer.name}</div>
-                            <div className="text-xs text-muted-foreground">{lawyer.email}</div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="text-center">
-                            <div className="font-bold text-primary">{lawyer.totalProposals}</div>
-                            <div className="text-xs text-muted-foreground">Propostas</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-bold text-success">{lawyer.approvedProposals}</div>
-                            <div className="text-xs text-muted-foreground">Aprovadas</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-bold text-warning">{formatPercentage(lawyer.conversionRate)}</div>
-                            <div className="text-xs text-muted-foreground">Taxa</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-bold">{formatCurrency(lawyer.totalValue)}</div>
-                            <div className="text-xs text-muted-foreground">Valor Total</div>
-                          </div>
-                        </div>
-                      </div>
+                    {creatorPerformance.map((creator, index) => (
+                       <div key={creator.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                         <div className="flex items-center gap-4">
+                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
+                             {index === 0 && <Crown className="w-4 h-4 text-yellow-500" />}
+                             {index === 1 && <Medal className="w-4 h-4 text-gray-400" />}
+                             {index === 2 && <Medal className="w-4 h-4 text-amber-600" />}
+                             {index > 2 && <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>}
+                           </div>
+                           <div>
+                             <div className="font-medium text-foreground">{creator.name}</div>
+                             <div className="text-xs text-muted-foreground">{creator.email}</div>
+                           </div>
+                         </div>
+                         
+                         <div className="flex items-center gap-6 text-sm">
+                           <div className="text-center">
+                             <div className="font-bold text-primary">{creator.totalProposals}</div>
+                             <div className="text-xs text-muted-foreground">Propostas</div>
+                           </div>
+                           <div className="text-center">
+                             <div className="font-bold text-success">{creator.approvedProposals}</div>
+                             <div className="text-xs text-muted-foreground">Aprovadas</div>
+                           </div>
+                           <div className="text-center">
+                             <div className="font-bold text-warning">{formatPercentage(creator.conversionRate)}</div>
+                             <div className="text-xs text-muted-foreground">Taxa</div>
+                           </div>
+                           <div className="text-center">
+                             <div className="font-bold">{formatCurrency(creator.totalValue)}</div>
+                             <div className="text-xs text-muted-foreground">Valor Total</div>
+                           </div>
+                         </div>
+                       </div>
                     ))}
                   </div>
                 </CardContent>
@@ -395,17 +466,17 @@ const Relatorios = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {lawyerPerformance
+                     {creatorPerformance
                         .sort((a, b) => b.totalProposals - a.totalProposals)
                         .slice(0, 3)
-                        .map((lawyer, index) => (
-                          <div key={lawyer.id} className="flex items-center justify-between">
+                        .map((creator, index) => (
+                          <div key={creator.id} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-medium text-muted-foreground w-4">#{index + 1}</span>
-                              <span className="text-sm font-medium">{lawyer.name.split(' ')[1]} {lawyer.name.split(' ')[2]}</span>
+                              <span className="text-sm font-medium">{creator.name.split(' ')[1] || creator.name.split(' ')[0]} {creator.name.split(' ')[2] || ''}</span>
                             </div>
                             <Badge variant="outline" className="text-xs">
-                              {lawyer.totalProposals} propostas
+                              {creator.totalProposals} propostas
                             </Badge>
                           </div>
                         ))}
@@ -422,17 +493,17 @@ const Relatorios = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {lawyerPerformance
+                     {creatorPerformance
                         .sort((a, b) => b.conversionRate - a.conversionRate)
                         .slice(0, 3)
-                        .map((lawyer, index) => (
-                          <div key={lawyer.id} className="flex items-center justify-between">
+                        .map((creator, index) => (
+                          <div key={creator.id} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-medium text-muted-foreground w-4">#{index + 1}</span>
-                              <span className="text-sm font-medium">{lawyer.name.split(' ')[1]} {lawyer.name.split(' ')[2]}</span>
+                              <span className="text-sm font-medium">{creator.name.split(' ')[1] || creator.name.split(' ')[0]} {creator.name.split(' ')[2] || ''}</span>
                             </div>
                             <Badge className="bg-success text-success-foreground text-xs">
-                              {formatPercentage(lawyer.conversionRate)}
+                              {formatPercentage(creator.conversionRate)}
                             </Badge>
                           </div>
                         ))}
@@ -449,17 +520,17 @@ const Relatorios = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {lawyerPerformance
+                     {creatorPerformance
                         .sort((a, b) => b.totalValue - a.totalValue)
                         .slice(0, 3)
-                        .map((lawyer, index) => (
-                          <div key={lawyer.id} className="flex items-center justify-between">
+                        .map((creator, index) => (
+                          <div key={creator.id} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-medium text-muted-foreground w-4">#{index + 1}</span>
-                              <span className="text-sm font-medium">{lawyer.name.split(' ')[1]} {lawyer.name.split(' ')[2]}</span>
+                              <span className="text-sm font-medium">{creator.name.split(' ')[1] || creator.name.split(' ')[0]} {creator.name.split(' ')[2] || ''}</span>
                             </div>
                             <Badge className="bg-primary text-primary-foreground text-xs">
-                              {formatCurrency(lawyer.totalValue)}
+                              {formatCurrency(creator.totalValue)}
                             </Badge>
                           </div>
                         ))}
@@ -505,7 +576,10 @@ const Relatorios = () => {
                       <div>
                         <h4 className="font-medium text-primary">Performance dos advogados</h4>
                         <p className="text-sm text-muted-foreground">
-                          Dr. Giuvana Vargas lidera com {lawyerPerformance[0].totalProposals} propostas e {formatPercentage(lawyerPerformance[0].conversionRate)} de aprovação.
+                          {creatorPerformance.length > 0 ? 
+                            `${creatorPerformance[0].name} lidera com ${creatorPerformance[0].totalProposals} propostas e ${formatPercentage(creatorPerformance[0].conversionRate)} de aprovação.` :
+                            'Nenhum dado de performance disponível ainda.'
+                          }
                         </p>
                       </div>
                     </div>
@@ -514,6 +588,7 @@ const Relatorios = () => {
               </Card>
 
             </div>
+            )}
           </main>
         </div>
       </div>
