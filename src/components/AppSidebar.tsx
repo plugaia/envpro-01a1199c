@@ -88,12 +88,12 @@ export function AppSidebar() {
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent className="bg-sidebar">
-            <SidebarMenu className={`space-y-1 ${collapsed ? "px-1" : "px-2"}`}>
+            <SidebarMenu className={`space-y-2 ${collapsed ? "px-1" : "px-2"}`}>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild
-                    className="w-full justify-start hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
+                    className="w-full justify-start hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground h-10"
                   >
                     <NavLink 
                       to={item.url} 
@@ -101,8 +101,8 @@ export function AppSidebar() {
                       className={({ isActive }) => 
                         `flex items-center rounded-lg text-sm font-medium transition-colors ${
                           collapsed 
-                            ? "justify-center p-2 mx-1" 
-                            : "gap-3 px-3 py-2"
+                            ? "justify-center p-2.5 mx-1" 
+                            : "gap-3 px-3 py-2.5"
                         } ${
                           isActive 
                             ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" 
