@@ -1,564 +1,511 @@
 import { useState, useEffect } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Settings, User, Mail, Bell, Shield, Download, Upload, Trash2, Users, UserPlus, Clock, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { BackupExport } from "@/components/BackupExport";
+import { AuditLogs } from "@/components/AuditLogs";
+import { 
+  User, 
+  Building2, 
+  Bell, 
+  Shield, 
+  Palette,
+  Save
+} from "lucide-react";
 
-const Configuracoes = () => {
+export default function Configuracoes() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [whatsappNotifications, setWhatsappNotifications] = useState(true);
-  const [autoSave, setAutoSave] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
-  const [pendingInvitations, setPendingInvitations] = useState([]);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteData, setInviteData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    whatsappNumber: ''
+  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    company_id: ""
   });
-  const [isInviting, setIsInviting] = useState(false);
+  const [company, setCompany] = useState({
+    name: "",
+    cnpj: "",
+    responsible_phone: "",
+    responsible_email: "",
+    address_street: "",
+    address_number: "",
+    address_complement: "",
+    address_neighborhood: "",
+    address_city: "",
+    address_state: "",
+    address_zip_code: ""
+  });
+  const [notifications, setNotifications] = useState({
+    email: true,
+    push: false,
+    sms: false
+  });
+  const [theme, setTheme] = useState("light");
 
   useEffect(() => {
     if (user) {
-      checkAdminStatus();
-      // Load saved settings
-      const savedSettings = localStorage.getItem('user-settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        setEmailNotifications(settings.emailNotifications ?? true);
-        setWhatsappNotifications(settings.whatsappNotifications ?? true);
-        setAutoSave(settings.autoSave ?? true);
-      }
+      fetchUserData();
     }
   }, [user]);
 
-  useEffect(() => {
-    if (isAdmin && user) {
-      fetchTeamData();
-    }
-  }, [isAdmin, user]);
+  const fetchUserData = async () => {
+    try {
+      // Fetch user profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
 
-  const checkAdminStatus = async () => {
+      if (profileError) throw profileError;
+
+      // Fetch company data
+      const { data: companyData, error: companyError } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', profileData.company_id)
+        .single();
+
+      if (companyError) throw companyError;
+
+      setProfile({
+        first_name: profileData.first_name || "",
+        last_name: profileData.last_name || "",
+        email: user?.email || "",
+        company_id: profileData.company_id
+      });
+
+      setCompany(companyData);
+
+      // Load saved preferences
+      const savedPrefs = localStorage.getItem('userPreferences');
+      if (savedPrefs) {
+        const prefs = JSON.parse(savedPrefs);
+        setNotifications(prefs.notifications || notifications);
+        setTheme(prefs.theme || theme);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast({
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar as informações do usuário.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveProfile = async () => {
     if (!user) return;
     
+    setLoading(true);
     try {
-      const { data: adminCheck, error } = await supabase
-        .rpc('is_admin', { user_id: user.id });
-      
-      if (error) throw error;
-      setIsAdmin(adminCheck || false);
-    } catch (error) {
-      console.error('Error checking admin status:', error);
-    }
-  };
-
-  const fetchTeamData = async () => {
-    if (!isAdmin || !user) return;
-    
-    try {
-      const companyId = await getUserCompanyId();
-      
-      // Fetch team members
-      const { data: profiles, error: profilesError } = await supabase
+      const { error } = await supabase
         .from('profiles')
-        .select('*, companies(name)')
-        .eq('company_id', companyId);
-      
-      if (profilesError) throw profilesError;
-      setTeamMembers(profiles || []);
-
-      // Fetch pending invitations
-      const { data: invitations, error: invitationsError } = await supabase
-        .from('team_invitations')
-        .select('*')
-        .eq('status', 'pending')
-        .eq('company_id', companyId);
-      
-      if (invitationsError) throw invitationsError;
-      setPendingInvitations(invitations || []);
-    } catch (error) {
-      console.error('Error fetching team data:', error);
-    }
-  };
-
-  const getUserCompanyId = async () => {
-    const { data, error } = await supabase
-      .rpc('get_user_company_id', { user_id: user.id });
-    if (error) throw error;
-    return data;
-  };
-
-  const handleSendInvitation = async () => {
-    if (!inviteData.firstName || !inviteData.lastName || !inviteData.email) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Nome, sobrenome e email são obrigatórios.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsInviting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-team-invitation', {
-        body: {
-          email: inviteData.email,
-          firstName: inviteData.firstName,
-          lastName: inviteData.lastName,
-          whatsappNumber: inviteData.whatsappNumber || null
-        }
-      });
+        .update({
+          first_name: profile.first_name,
+          last_name: profile.last_name
+        })
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      toast({
-        title: "Convite enviado!",
-        description: `Convite enviado para ${inviteData.email}`,
+      // Log the action
+      await supabase.rpc('create_audit_log', {
+        p_action_type: 'PROFILE_UPDATED',
+        p_table_name: 'profiles',
+        p_new_data: profile
       });
 
-      setShowInviteModal(false);
-      setInviteData({ firstName: '', lastName: '', email: '', whatsappNumber: '' });
-      fetchTeamData(); // Refresh data
-    } catch (error) {
-      console.error('Error sending invitation:', error);
       toast({
-        title: "Erro ao enviar convite",
-        description: error.message || "Ocorreu um erro ao enviar o convite.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsInviting(false);
-    }
-  };
-
-  const formatWhatsApp = (value) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length <= 2) return `(${cleaned}`;
-    if (cleaned.length <= 7) return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
-    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7, 11)}`;
-  };
-
-  const handleWhatsAppChange = (e) => {
-    const formatted = formatWhatsApp(e.target.value);
-    setInviteData(prev => ({ ...prev, whatsappNumber: formatted }));
-  };
-
-  const handleSaveSettings = async () => {
-    try {
-      // Save user preferences to localStorage for now
-      const settings = {
-        emailNotifications,
-        whatsappNotifications,
-        autoSave
-      };
-      localStorage.setItem('user-settings', JSON.stringify(settings));
-      
-      toast({
-        title: "Configurações salvas",
-        description: "Suas configurações foram atualizadas com sucesso.",
+        title: "Perfil atualizado!",
+        description: "Suas informações foram salvas com sucesso.",
       });
     } catch (error) {
+      console.error('Error updating profile:', error);
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar as configurações.",
-        variant: "destructive",
+        description: "Não foi possível atualizar o perfil.",
+        variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleExportData = () => {
+  const handleSaveCompany = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update(company)
+        .eq('id', profile.company_id);
+
+      if (error) throw error;
+
+      // Log the action
+      await supabase.rpc('create_audit_log', {
+        p_action_type: 'SETTINGS_UPDATED',
+        p_table_name: 'companies',
+        p_new_data: company
+      });
+
+      toast({
+        title: "Empresa atualizada!",
+        description: "Os dados da empresa foram salvos com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error updating company:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível atualizar os dados da empresa.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSavePreferences = () => {
+    // Save preferences to localStorage
+    localStorage.setItem('userPreferences', JSON.stringify({
+      notifications,
+      theme,
+      savedAt: new Date().toISOString()
+    }));
+
     toast({
-      title: "Exportação iniciada",
-      description: "Seus dados estão sendo preparados para download.",
+      title: "Preferências salvas!",
+      description: "Suas configurações foram atualizadas com sucesso.",
     });
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Settings className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-foreground">Configurações</h1>
-                  <p className="text-sm text-muted-foreground">Gerencie as configurações da sua conta</p>
-                </div>
+    <div className="container mx-auto p-6 max-w-6xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
+        <p className="text-muted-foreground">
+          Gerencie suas preferências e configurações da conta
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        {/* Perfil do Usuário */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Perfil do Usuário
+            </CardTitle>
+            <CardDescription>
+              Atualize suas informações pessoais
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Nome</Label>
+                <Input 
+                  id="firstName" 
+                  placeholder="Seu nome" 
+                  value={profile.first_name}
+                  onChange={(e) => setProfile(prev => ({ ...prev, first_name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Sobrenome</Label>
+                <Input 
+                  id="lastName" 
+                  placeholder="Seu sobrenome" 
+                  value={profile.last_name}
+                  onChange={(e) => setProfile(prev => ({ ...prev, last_name: e.target.value }))}
+                />
               </div>
             </div>
-          </header>
-          
-          <main className="flex-1 p-6">
-            <div className="max-w-4xl mx-auto space-y-6">
-              
-              {/* Profile Settings */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <User className="w-5 h-5 text-primary" />
-                    <CardTitle>Informações do Perfil</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Atualize suas informações pessoais e profissionais
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Nome</Label>
-                      <Input 
-                        id="firstName" 
-                        placeholder="Seu nome" 
-                        defaultValue={user ? (user.user_metadata?.firstName || '') : ''} 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Sobrenome</Label>
-                      <Input 
-                        id="lastName" 
-                        placeholder="Seu sobrenome" 
-                        defaultValue={user ? (user.user_metadata?.lastName || '') : ''} 
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="seu@email.com" 
-                        defaultValue={user?.email || ''} 
-                        disabled
-                        className="opacity-70"
-                      />
-                      <p className="text-xs text-muted-foreground">O email não pode ser alterado aqui</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input 
-                        id="phone" 
-                        placeholder="(11) 99999-9999" 
-                        defaultValue={user ? (user.user_metadata?.phone || '') : ''} 
-                      />
-                    </div>
-                  </div>
-                  <Button onClick={handleSaveSettings} className="bg-primary hover:bg-primary-hover">
-                    Salvar Informações
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Notification Settings */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Bell className="w-5 h-5 text-primary" />
-                    <CardTitle>Notificações</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Configure como você deseja receber notificações sobre suas propostas
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="email-notifications">Notificações por Email</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receba emails quando houver atualizações em suas propostas
-                      </p>
-                    </div>
-                    <Switch
-                      id="email-notifications"
-                      checked={emailNotifications}
-                      onCheckedChange={setEmailNotifications}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="whatsapp-notifications">Notificações por WhatsApp</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Receba mensagens no WhatsApp sobre status das propostas
-                      </p>
-                    </div>
-                    <Switch
-                      id="whatsapp-notifications"
-                      checked={whatsappNotifications}
-                      onCheckedChange={setWhatsappNotifications}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="auto-save">Salvamento Automático</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Salve automaticamente rascunhos de propostas
-                      </p>
-                    </div>
-                    <Switch
-                      id="auto-save"
-                      checked={autoSave}
-                      onCheckedChange={setAutoSave}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Security Settings */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-primary" />
-                    <CardTitle>Segurança</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Mantenha sua conta segura e protegida
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="current-password">Senha Atual</Label>
-                    <Input id="current-password" type="password" placeholder="Digite sua senha atual" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">Nova Senha</Label>
-                      <Input id="new-password" type="password" placeholder="Digite a nova senha" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirmar Senha</Label>
-                      <Input id="confirm-password" type="password" placeholder="Confirme a nova senha" />
-                    </div>
-                  </div>
-                  <Button variant="outline">
-                    Alterar Senha
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Team Management - Only for Admins */}
-              {isAdmin && (
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-5 h-5 text-primary" />
-                      <CardTitle>Gerenciamento de Equipe</CardTitle>
-                    </div>
-                    <CardDescription>
-                      Gerencie membros da equipe e convites pendentes
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Invite New Member */}
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-medium">Membros da Equipe</h3>
-                      <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
-                        <DialogTrigger asChild>
-                          <Button className="flex items-center gap-2">
-                            <UserPlus className="w-4 h-4" />
-                            Convidar Membro
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Convidar Novo Membro</DialogTitle>
-                            <DialogDescription>
-                              Envie um convite para um novo membro se juntar à sua equipe
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="firstName">Nome</Label>
-                                <Input
-                                  id="firstName"
-                                  value={inviteData.firstName}
-                                  onChange={(e) => setInviteData(prev => ({ ...prev, firstName: e.target.value }))}
-                                  placeholder="João"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="lastName">Sobrenome</Label>
-                                <Input
-                                  id="lastName"
-                                  value={inviteData.lastName}
-                                  onChange={(e) => setInviteData(prev => ({ ...prev, lastName: e.target.value }))}
-                                  placeholder="Silva"
-                                />
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="email">Email</Label>
-                              <Input
-                                id="email"
-                                type="email"
-                                value={inviteData.email}
-                                onChange={(e) => setInviteData(prev => ({ ...prev, email: e.target.value }))}
-                                placeholder="joao.silva@empresa.com"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="whatsapp">WhatsApp (opcional)</Label>
-                              <Input
-                                id="whatsapp"
-                                value={inviteData.whatsappNumber}
-                                onChange={handleWhatsAppChange}
-                                placeholder="(11) 99999-9999"
-                                maxLength={15}
-                              />
-                            </div>
-                            <Button 
-                              onClick={handleSendInvitation} 
-                              disabled={isInviting}
-                              className="w-full"
-                            >
-                              {isInviting ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                                  Enviando...
-                                </>
-                              ) : (
-                                'Enviar Convite'
-                              )}
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-
-                    {/* Current Team Members */}
-                    <div className="space-y-3">
-                      {teamMembers.map((member) => (
-                        <div key={member.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                          <div>
-                            <p className="font-medium">{member.first_name} {member.last_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {member.role === 'admin' ? 'Administrador' : 'Colaborador'}
-                            </p>
-                          </div>
-                          <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
-                            {member.role === 'admin' ? 'Admin' : 'Membro'}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Pending Invitations */}
-                    {pendingInvitations.length > 0 && (
-                      <>
-                        <Separator />
-                        <div>
-                          <h4 className="font-medium mb-3 flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            Convites Pendentes
-                          </h4>
-                          <div className="space-y-3">
-                            {pendingInvitations.map((invitation) => (
-                              <div key={invitation.id} className="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30">
-                                <div>
-                                  <p className="font-medium">{invitation.first_name} {invitation.last_name}</p>
-                                  <p className="text-sm text-muted-foreground">{invitation.email}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Expira em: {new Date(invitation.expires_at).toLocaleDateString('pt-BR')}
-                                  </p>
-                                </div>
-                                <Badge variant="outline">Pendente</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Data Management */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Gerenciamento de Dados</CardTitle>
-                  <CardDescription>
-                    Exporte, importe ou exclua seus dados da plataforma
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button 
-                      variant="outline" 
-                      onClick={handleExportData}
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Exportar Dados
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Upload className="w-4 h-4" />
-                      Importar Dados
-                    </Button>
-                  </div>
-                  <Separator />
-                  <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
-                    <h4 className="font-medium text-destructive mb-2">Zona de Perigo</h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Esta ação é irreversível. Todos os seus dados, propostas e configurações serão permanentemente excluídos.
-                    </p>
-                    <Button variant="destructive" className="flex items-center gap-2">
-                      <Trash2 className="w-4 h-4" />
-                      Excluir Conta
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* System Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informações do Sistema</CardTitle>
-                  <CardDescription>
-                    Versão atual e informações técnicas
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Versão da Plataforma</p>
-                      <p className="text-sm text-muted-foreground">LegalProp v1.0.0</p>
-                    </div>
-                    <Badge variant="secondary">Atualizada</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="seu@email.com"
+                value={profile.email}
+                disabled
+              />
+              <p className="text-sm text-muted-foreground">
+                O email não pode ser alterado por questões de segurança
+              </p>
             </div>
-          </main>
-        </div>
-      </div>
-    </SidebarProvider>
-  );
-};
+            <Button 
+              onClick={handleSaveProfile} 
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? "Salvando..." : "Salvar Perfil"}
+            </Button>
+          </CardContent>
+        </Card>
 
-export default Configuracoes;
+        {/* Informações da Empresa */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Informações da Empresa
+            </CardTitle>
+            <CardDescription>
+              Configure os dados da sua empresa
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Nome da Empresa</Label>
+                <Input 
+                  id="companyName" 
+                  placeholder="Nome da empresa" 
+                  value={company.name}
+                  onChange={(e) => setCompany(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cnpj">CNPJ</Label>
+                <Input 
+                  id="cnpj" 
+                  placeholder="00.000.000/0001-00"
+                  value={company.cnpj}
+                  onChange={(e) => setCompany(prev => ({ ...prev, cnpj: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input 
+                  id="phone" 
+                  placeholder="(11) 99999-9999"
+                  value={company.responsible_phone}
+                  onChange={(e) => setCompany(prev => ({ ...prev, responsible_phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="companyEmail">Email da Empresa</Label>
+                <Input 
+                  id="companyEmail" 
+                  type="email" 
+                  placeholder="contato@empresa.com"
+                  value={company.responsible_email}
+                  onChange={(e) => setCompany(prev => ({ ...prev, responsible_email: e.target.value }))}
+                />
+              </div>
+            </div>
+            
+            {/* Endereço */}
+            <Separator />
+            <div className="space-y-4">
+              <h4 className="font-medium">Endereço</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="street">Rua</Label>
+                  <Input 
+                    id="street" 
+                    placeholder="Nome da rua"
+                    value={company.address_street || ""}
+                    onChange={(e) => setCompany(prev => ({ ...prev, address_street: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="number">Número</Label>
+                  <Input 
+                    id="number" 
+                    placeholder="123"
+                    value={company.address_number || ""}
+                    onChange={(e) => setCompany(prev => ({ ...prev, address_number: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="complement">Complemento</Label>
+                  <Input 
+                    id="complement" 
+                    placeholder="Sala 101"
+                    value={company.address_complement || ""}
+                    onChange={(e) => setCompany(prev => ({ ...prev, address_complement: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="neighborhood">Bairro</Label>
+                  <Input 
+                    id="neighborhood" 
+                    placeholder="Centro"
+                    value={company.address_neighborhood || ""}
+                    onChange={(e) => setCompany(prev => ({ ...prev, address_neighborhood: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">Cidade</Label>
+                  <Input 
+                    id="city" 
+                    placeholder="São Paulo"
+                    value={company.address_city || ""}
+                    onChange={(e) => setCompany(prev => ({ ...prev, address_city: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">Estado</Label>
+                  <Input 
+                    id="state" 
+                    placeholder="SP"
+                    value={company.address_state || ""}
+                    onChange={(e) => setCompany(prev => ({ ...prev, address_state: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">CEP</Label>
+                <Input 
+                  id="zipCode" 
+                  placeholder="00000-000"
+                  value={company.address_zip_code || ""}
+                  onChange={(e) => setCompany(prev => ({ ...prev, address_zip_code: e.target.value }))}
+                  className="max-w-xs"
+                />
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleSaveCompany} 
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? "Salvando..." : "Salvar Empresa"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Preferências de Notificação */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notificações
+            </CardTitle>
+            <CardDescription>
+              Configure como você deseja receber notificações
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="email-notifications">Notificações por Email</Label>
+                <p className="text-sm text-muted-foreground">
+                  Receba updates importantes por email
+                </p>
+              </div>
+              <Switch
+                id="email-notifications"
+                checked={notifications.email}
+                onCheckedChange={(checked) => 
+                  setNotifications(prev => ({ ...prev, email: checked }))
+                }
+              />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="push-notifications">Notificações Push</Label>
+                <p className="text-sm text-muted-foreground">
+                  Receba notificações push no navegador
+                </p>
+              </div>
+              <Switch
+                id="push-notifications"
+                checked={notifications.push}
+                onCheckedChange={(checked) => 
+                  setNotifications(prev => ({ ...prev, push: checked }))
+                }
+              />
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="sms-notifications">Notificações por SMS</Label>
+                <p className="text-sm text-muted-foreground">
+                  Receba SMS para ações críticas
+                </p>
+              </div>
+              <Switch
+                id="sms-notifications"
+                checked={notifications.sms}
+                onCheckedChange={(checked) => 
+                  setNotifications(prev => ({ ...prev, sms: checked }))
+                }
+              />
+            </div>
+            <Button onClick={handleSavePreferences} className="w-full sm:w-auto">
+              <Save className="h-4 w-4 mr-2" />
+              Salvar Preferências
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Aparência */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5" />
+              Aparência
+            </CardTitle>
+            <CardDescription>
+              Personalize a aparência da aplicação
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tema</Label>
+              <div className="flex gap-4">
+                <Button
+                  variant={theme === "light" ? "default" : "outline"}
+                  onClick={() => setTheme("light")}
+                  className="flex-1"
+                >
+                  Claro
+                </Button>
+                <Button
+                  variant={theme === "dark" ? "default" : "outline"}
+                  onClick={() => setTheme("dark")}
+                  className="flex-1"
+                >
+                  Escuro
+                </Button>
+                <Button
+                  variant={theme === "system" ? "default" : "outline"}
+                  onClick={() => setTheme("system")}
+                  className="flex-1"
+                >
+                  Sistema
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Backup e Exportação */}
+        <BackupExport />
+
+        {/* Logs de Auditoria */}
+        <AuditLogs />
+      </div>
+    </div>
+  );
+}

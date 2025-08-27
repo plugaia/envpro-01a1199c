@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       client_contacts: {
         Row: {
           created_at: string
@@ -336,6 +375,16 @@ export type Database = {
         Args: { p_invitation_token: string; p_user_id: string }
         Returns: boolean
       }
+      create_audit_log: {
+        Args: {
+          p_action_type: string
+          p_new_data?: Json
+          p_old_data?: Json
+          p_record_id?: string
+          p_table_name?: string
+        }
+        Returns: string
+      }
       create_notification: {
         Args: {
           p_data?: Json
@@ -361,6 +410,10 @@ export type Database = {
           invitation_id: string
           invitation_token: string
         }[]
+      }
+      export_company_data: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       get_client_contact: {
         Args: { p_proposal_id: string }
