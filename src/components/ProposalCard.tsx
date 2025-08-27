@@ -100,13 +100,24 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView, on
 
   const handleDownloadPDF = async (proposal: Proposal) => {
     try {
+      console.log('Generating PDF for proposal:', proposal.id);
+      
       const response = await supabase.functions.invoke('generate-proposal-pdf', {
         body: { proposalId: proposal.id }
       });
 
-      if (response.error) throw response.error;
+      console.log('PDF response:', response);
+
+      if (response.error) {
+        console.error('PDF generation error:', response.error);
+        throw response.error;
+      }
 
       const { data } = response;
+      
+      if (!data?.htmlContent) {
+        throw new Error('No HTML content received');
+      }
       
       // Create a blob from the HTML and trigger download
       const blob = new Blob([data.htmlContent], { type: 'text/html' });
@@ -121,13 +132,13 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView, on
 
       toast({
         title: "PDF preparado",
-        description: "Arquivo HTML baixado. Use o navegador para salvar como PDF.",
+        description: "Arquivo HTML baixado. Use Ctrl+P no arquivo para salvar como PDF.",
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
         title: "Erro ao gerar PDF",
-        description: "Não foi possível gerar o PDF. Tente novamente.",
+        description: `Não foi possível gerar o PDF. Erro: ${error.message}`,
         variant: "destructive",
       });
     }
