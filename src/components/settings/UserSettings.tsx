@@ -155,9 +155,31 @@ export function UserSettings() {
 
       if (error) throw error;
 
+      // Send invitation email via edge function
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-team-invitation', {
+        body: {
+          email: inviteForm.email,
+          firstName: inviteForm.firstName,
+          lastName: inviteForm.lastName,
+          whatsappNumber: inviteForm.whatsapp || null
+        }
+      });
+
+      console.log('Email result:', { emailResult, emailError });
+
+      if (emailError) {
+        console.error('Email error:', emailError);
+        toast({
+          title: "Aviso",
+          description: "Convite criado mas houve erro ao enviar email. Verifique se a chave RESEND_API_KEY está configurada.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       toast({
-        title: "Convite criado!",
-        description: `Convite para ${inviteForm.firstName} ${inviteForm.lastName} foi criado. Agora você pode enviar o link de convite.`,
+        title: "Convite enviado!",
+        description: `Convite enviado por email para ${inviteForm.email}`,
       });
 
       setInviteForm({ firstName: "", lastName: "", email: "", whatsapp: "" });
