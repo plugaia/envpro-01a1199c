@@ -18,7 +18,15 @@ const Clientes = () => {
   const [clients, setClients] = useState<Client[]>(mockClients);
   const [searchTerm, setSearchTerm] = useState("");
   const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [showEditClientForm, setShowEditClientForm] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [newClientData, setNewClientData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    whatsapp: "",
+  });
+  const [editClientData, setEditClientData] = useState({
     firstName: "",
     lastName: "",
     email: "",
@@ -64,9 +72,43 @@ const Clientes = () => {
   };
 
   const handleEditClient = (client: Client) => {
+    setEditingClient(client);
+    setEditClientData({
+      firstName: client.firstName,
+      lastName: client.lastName,
+      email: client.email,
+      whatsapp: client.whatsapp,
+    });
+    setShowEditClientForm(true);
+  };
+
+  const handleUpdateClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editClientData.firstName || !editClientData.lastName || !editClientData.email || !editClientData.whatsapp) {
+      toast({
+        title: "Erro de validação",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editingClient) return;
+
+    setClients(prev => prev.map(client => 
+      client.id === editingClient.id 
+        ? { ...client, ...editClientData }
+        : client
+    ));
+
+    setShowEditClientForm(false);
+    setEditingClient(null);
+    setEditClientData({ firstName: "", lastName: "", email: "", whatsapp: "" });
+    
     toast({
-      title: "Editar cliente",
-      description: `Funcionalidade de edição para ${client.firstName} ${client.lastName} será implementada em breve.`,
+      title: "Cliente atualizado",
+      description: `${editClientData.firstName} ${editClientData.lastName} foi atualizado com sucesso.`,
     });
   };
 
@@ -320,6 +362,101 @@ const Clientes = () => {
                             className="flex-1 bg-primary hover:bg-primary-hover"
                           >
                             Salvar Cliente
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Edit Client Form Modal */}
+              {showEditClientForm && editingClient && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <Card className="w-full max-w-md">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>Editar Cliente</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setShowEditClientForm(false);
+                            setEditingClient(null);
+                            setEditClientData({ firstName: "", lastName: "", email: "", whatsapp: "" });
+                          }}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleUpdateClient} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="editFirstName">Nome*</Label>
+                            <Input
+                              id="editFirstName"
+                              placeholder="Nome"
+                              value={editClientData.firstName}
+                              onChange={(e) => setEditClientData(prev => ({ ...prev, firstName: e.target.value }))}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="editLastName">Sobrenome*</Label>
+                            <Input
+                              id="editLastName"
+                              placeholder="Sobrenome"
+                              value={editClientData.lastName}
+                              onChange={(e) => setEditClientData(prev => ({ ...prev, lastName: e.target.value }))}
+                              required
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="editEmail">E-mail*</Label>
+                          <Input
+                            id="editEmail"
+                            type="email"
+                            placeholder="cliente@email.com"
+                            value={editClientData.email}
+                            onChange={(e) => setEditClientData(prev => ({ ...prev, email: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="editWhatsapp">WhatsApp*</Label>
+                          <Input
+                            id="editWhatsapp"
+                            placeholder="+55 67 99999-9999"
+                            value={editClientData.whatsapp}
+                            onChange={(e) => setEditClientData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        
+                        <div className="flex gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setShowEditClientForm(false);
+                              setEditingClient(null);
+                              setEditClientData({ firstName: "", lastName: "", email: "", whatsapp: "" });
+                            }}
+                            className="flex-1"
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            type="submit"
+                            className="flex-1 bg-primary hover:bg-primary-hover"
+                          >
+                            Salvar Alterações
                           </Button>
                         </div>
                       </form>
