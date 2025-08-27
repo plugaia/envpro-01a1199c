@@ -35,6 +35,14 @@ const Configuracoes = () => {
   useEffect(() => {
     if (user) {
       checkAdminStatus();
+      // Load saved settings
+      const savedSettings = localStorage.getItem('user-settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setEmailNotifications(settings.emailNotifications ?? true);
+        setWhatsappNotifications(settings.whatsappNotifications ?? true);
+        setAutoSave(settings.autoSave ?? true);
+      }
     }
   }, [user]);
 
@@ -149,11 +157,27 @@ const Configuracoes = () => {
     setInviteData(prev => ({ ...prev, whatsappNumber: formatted }));
   };
 
-  const handleSaveSettings = () => {
-    toast({
-      title: "Configurações salvas",
-      description: "Suas configurações foram atualizadas com sucesso.",
-    });
+  const handleSaveSettings = async () => {
+    try {
+      // Save user preferences to localStorage for now
+      const settings = {
+        emailNotifications,
+        whatsappNotifications,
+        autoSave
+      };
+      localStorage.setItem('user-settings', JSON.stringify(settings));
+      
+      toast({
+        title: "Configurações salvas",
+        description: "Suas configurações foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as configurações.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExportData = () => {
@@ -201,22 +225,42 @@ const Configuracoes = () => {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Nome Completo</Label>
-                      <Input id="name" placeholder="Seu nome completo" defaultValue="Dr. Giuvana Vargas" />
+                      <Label htmlFor="firstName">Nome</Label>
+                      <Input 
+                        id="firstName" 
+                        placeholder="Seu nome" 
+                        defaultValue={user ? (user.user_metadata?.firstName || '') : ''} 
+                      />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" placeholder="seu@email.com" defaultValue="giuvana.vargas@wonebank.com.br" />
+                      <Label htmlFor="lastName">Sobrenome</Label>
+                      <Input 
+                        id="lastName" 
+                        placeholder="Seu sobrenome" 
+                        defaultValue={user ? (user.user_metadata?.lastName || '') : ''} 
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input id="phone" placeholder="(11) 99999-9999" defaultValue="+5567999909195" />
+                      <Label htmlFor="email">Email</Label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="seu@email.com" 
+                        defaultValue={user?.email || ''} 
+                        disabled
+                        className="opacity-70"
+                      />
+                      <p className="text-xs text-muted-foreground">O email não pode ser alterado aqui</p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="oab">OAB</Label>
-                      <Input id="oab" placeholder="SP123456" defaultValue="SP987654" />
+                      <Label htmlFor="phone">Telefone</Label>
+                      <Input 
+                        id="phone" 
+                        placeholder="(11) 99999-9999" 
+                        defaultValue={user ? (user.user_metadata?.phone || '') : ''} 
+                      />
                     </div>
                   </div>
                   <Button onClick={handleSaveSettings} className="bg-primary hover:bg-primary-hover">

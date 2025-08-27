@@ -347,13 +347,13 @@ Equipe EnvPRO 📋⚖️`
         <div className="flex-1 flex flex-col">
           <Header onNewProposal={handleNewProposal} />
           
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-4 md:p-6">
             <div className="max-w-7xl mx-auto">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-foreground mb-2">
+              <div className="mb-4 md:mb-6">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">
                   Propostas Jurídicas
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-sm md:text-base text-muted-foreground">
                   Gerencie e envie suas propostas para clientes via email ou WhatsApp
                 </p>
               </div>

@@ -458,6 +458,10 @@ export type Database = {
         Args: { notification_id: string }
         Returns: boolean
       }
+      verify_phone_digits: {
+        Args: { p_last_digits: string; p_proposal_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       user_role: "admin" | "collaborator"
