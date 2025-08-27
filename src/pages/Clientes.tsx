@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Plus, Search, Mail, MessageCircle, Edit, Trash2, X } from "lucide-react";
+import { Users, Plus, Search, Edit, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Client, mockClients } from "@/types/client";
 import { format } from "date-fns";
@@ -63,27 +63,10 @@ const Clientes = () => {
     });
   };
 
-  const handleSendEmail = (client: Client) => {
-    const subject = encodeURIComponent(`Contato - ${client.firstName} ${client.lastName}`);
-    const body = encodeURIComponent(`Olá ${client.firstName},\n\nEspero que esteja bem.\n\nAtenciosamente,\nEquipe LegalProp`);
-    
-    window.open(`mailto:${client.email}?subject=${subject}&body=${body}`, '_blank');
-    
+  const handleEditClient = (client: Client) => {
     toast({
-      title: "Email aberto",
-      description: `Cliente de email preparado para ${client.firstName}`,
-    });
-  };
-
-  const handleSendWhatsApp = (client: Client) => {
-    const message = encodeURIComponent(`Olá ${client.firstName}! Como posso ajudá-lo hoje?`);
-    const whatsappUrl = `https://wa.me/${client.whatsapp.replace(/[^\d]/g, '')}?text=${message}`;
-    
-    window.open(whatsappUrl, '_blank');
-    
-    toast({
-      title: "WhatsApp aberto",
-      description: `Conversa iniciada com ${client.firstName}`,
+      title: "Editar cliente",
+      description: `Funcionalidade de edição para ${client.firstName} ${client.lastName} será implementada em breve.`,
     });
   };
 
@@ -165,7 +148,7 @@ const Clientes = () => {
                         <p className="text-sm text-muted-foreground">Com WhatsApp</p>
                         <p className="text-2xl font-bold text-warning">{clients.length}</p>
                       </div>
-                      <MessageCircle className="w-8 h-8 text-warning/60" />
+                      <Users className="w-8 h-8 text-warning/60" />
                     </div>
                   </CardContent>
                 </Card>
@@ -221,20 +204,11 @@ const Clientes = () => {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => handleSendEmail(client)}
+                                  onClick={() => handleEditClient(client)}
                                   className="h-8 w-8 p-0"
-                                  title="Enviar Email"
+                                  title="Editar"
                                 >
-                                  <Mail className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleSendWhatsApp(client)}
-                                  className="h-8 w-8 p-0"
-                                  title="WhatsApp"
-                                >
-                                  <MessageCircle className="w-4 h-4" />
+                                  <Edit className="w-4 h-4" />
                                 </Button>
                                 <Button
                                   size="sm"
