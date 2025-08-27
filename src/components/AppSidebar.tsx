@@ -25,7 +25,6 @@ import {
 
 const items = [
   { title: "Propostas", url: "/", icon: FileText },
-  { title: "Nova Proposta", url: "/nova", icon: Plus },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
