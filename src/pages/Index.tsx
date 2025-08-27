@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
@@ -7,58 +7,15 @@ import { ProposalForm } from "@/components/ProposalForm";
 import { ProposalFilters, type FilterOptions } from "@/components/ProposalFilters";
 import { ProposalList } from "@/components/ProposalList";
 import { useToast } from "@/hooks/use-toast";
-import { type Client } from "@/types/client";
-
-// Mock data for demonstration
-const mockProposals: Proposal[] = [
-  {
-    id: "prop-123",
-    clientName: "VALDENIR LOURENÇO MARTINS",
-    clientEmail: "valdenir@email.com",
-    processNumber: "0843335-72.2013.8.12.0001",
-    organizationName: "INSS",
-    cedibleValue: 399694.00,
-    proposalValue: 199847.00,
-    receiverType: "precatorio",
-    status: "pendente",
-    createdAt: new Date("2025-06-05T17:20:00"),
-    updatedAt: new Date("2025-06-05T17:20:00"),
-    assignee: "Giuvana",
-  },
-  {
-    id: "prop-124", 
-    clientName: "KETLLEN SAMARA RODRIGUES LEMOS ROMANINI",
-    clientEmail: "ketllen@email.com",
-    processNumber: "0843335-72.2013.8.12.0002",
-    organizationName: "INSS",
-    cedibleValue: 71507.00,
-    proposalValue: 39329.00,
-    receiverType: "precatorio",
-    status: "aprovada",
-    createdAt: new Date("2025-06-03T19:55:00"),
-    updatedAt: new Date("2025-06-03T19:55:00"),
-    assignee: "Giuvana",
-  },
-  {
-    id: "prop-125",
-    clientName: "JOANA DARC FERREIRA BORGES", 
-    clientEmail: "joana@email.com",
-    processNumber: "0843335-72.2013.8.12.0003",
-    organizationName: "INSS",
-    cedibleValue: 71057.00,
-    proposalValue: 35528.50,
-    receiverType: "precatorio",
-    status: "rejeitada",
-    createdAt: new Date("2025-06-03T19:33:00"),
-    updatedAt: new Date("2025-06-03T19:33:00"),
-    assignee: "Giuvana",
-  }
-];
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { toast } = useToast();
-  const [proposals, setProposals] = useState<Proposal[]>(mockProposals);
+  const { user } = useAuth();
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [showProposalForm, setShowProposalForm] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterOptions>({
     search: "",
     status: [],
@@ -69,52 +26,85 @@ const Index = () => {
     maxValue: undefined,
   });
 
+  // Fetch proposals on component mount and when user changes
+  useEffect(() => {
+    if (user) {
+      fetchProposals();
+    }
+  }, [user]);
+
+  const fetchProposals = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('proposals')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform data to match Proposal interface
+      const transformedProposals: Proposal[] = data.map(proposal => ({
+        id: proposal.id,
+        clientName: proposal.client_name,
+        clientEmail: proposal.client_email,
+        processNumber: proposal.process_number,
+        organizationName: proposal.organization_name,
+        cedibleValue: parseFloat(proposal.cedible_value.toString()),
+        proposalValue: parseFloat(proposal.proposal_value.toString()),
+        receiverType: proposal.receiver_type as "advogado" | "autor" | "precatorio",
+        status: proposal.status as "pendente" | "aprovada" | "rejeitada",
+        createdAt: new Date(proposal.created_at),
+        updatedAt: new Date(proposal.updated_at),
+        assignee: "Sistema", // TODO: Get from created_by relation
+      }));
+
+      setProposals(transformedProposals);
+      
+    } catch (error) {
+      console.error('Error fetching proposals:', error);
+      toast({
+        title: "Erro ao carregar propostas",
+        description: "Não foi possível carregar as propostas. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleNewProposal = () => {
     setShowProposalForm(true);
   };
 
-  const handleSubmitProposal = (proposalData: any) => {
-    const newProposal: Proposal = {
-      ...proposalData,
-      assignee: "Sistema", // Default assignee
-    };
-    setProposals(prev => [newProposal, ...prev]);
+  const handleSubmitProposal = () => {
+    // Refresh proposals list after creating a new one
+    fetchProposals();
   };
 
-  const handleAddClient = (clientData: Omit<Client, 'id' | 'createdAt'>) => {
-    // In a real app, this would save to database
-    toast({
-      title: "Cliente adicionado",
-      description: `${clientData.firstName} ${clientData.lastName} foi adicionado com sucesso.`,
-    });
-  };
+  const handleSendEmail = async (proposal: Proposal) => {
+    try {
+      const response = await supabase.functions.invoke('send-proposal-email', {
+        body: { proposalId: proposal.id }
+      });
 
-  const handleSendEmail = (proposal: Proposal) => {
-    // Create professional email with proposal link
-    const subject = encodeURIComponent(`Proposta Jurídica - ${proposal.clientName}`);
-    const body = encodeURIComponent(
-      `Prezado(a) ${proposal.clientName},
+      if (response.error) throw response.error;
 
-Temos uma proposta de antecipação de crédito judicial para análise.
-
-Detalhes da Proposta:
-• Processo: ${proposal.processNumber || 'N/A'}
-• Valor Cedível: R$ ${proposal.cedibleValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-• Valor da Proposta: R$ ${proposal.proposalValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-
-Para visualizar e responder à proposta, acesse:
-${window.location.origin}/proposta/${proposal.id}
-
-Atenciosamente,
-Equipe LegalProp`
-    );
-    
-    window.open(`mailto:${proposal.clientEmail}?subject=${subject}&body=${body}`, '_blank');
-    
-    toast({
-      title: "Email preparado",
-      description: `Cliente de email aberto para ${proposal.clientEmail}`,
-    });
+      toast({
+        title: "Email enviado!",
+        description: `Proposta enviada para ${proposal.clientEmail}`,
+      });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Erro ao enviar email",
+        description: "Não foi possível enviar o email. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSendWhatsApp = (proposal: Proposal) => {
@@ -228,12 +218,18 @@ Equipe LegalProp 📋⚖️`
               />
 
               {/* Proposals List */}
-              <ProposalList
-                proposals={filteredProposals}
-                onSendEmail={handleSendEmail}
-                onSendWhatsApp={handleSendWhatsApp}
-                onView={handleViewProposal}
-              />
+              {loading ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <ProposalList
+                  proposals={filteredProposals}
+                  onSendEmail={handleSendEmail}
+                  onSendWhatsApp={handleSendWhatsApp}
+                  onView={handleViewProposal}
+                />
+              )}
             </div>
           </main>
         </div>
@@ -242,7 +238,6 @@ Equipe LegalProp 📋⚖️`
           <ProposalForm
             onClose={() => setShowProposalForm(false)}
             onSubmit={handleSubmitProposal}
-            onAddClient={handleAddClient}
           />
         )}
       </div>
