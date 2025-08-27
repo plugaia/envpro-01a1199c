@@ -55,6 +55,7 @@ const Index = () => {
         id: proposal.id,
         clientName: proposal.client_name,
         clientEmail: proposal.client_email,
+        clientPhone: proposal.client_phone,
         processNumber: proposal.process_number,
         organizationName: proposal.organization_name,
         cedibleValue: parseFloat(proposal.cedible_value.toString()),
@@ -144,17 +145,17 @@ ${window.location.origin}/proposta/${proposal.id}
 Equipe LegalProp 📋⚖️`
     );
     
-    // Use client's WhatsApp number if available, otherwise fallback to generic WhatsApp
-    const whatsappNumber = (proposal as any).clientWhatsapp || "";
-    const whatsappUrl = whatsappNumber 
-      ? `https://wa.me/${whatsappNumber.replace(/[^\d]/g, '')}?text=${message}`
+    // Use client's phone number for WhatsApp
+    const phoneNumber = proposal.clientPhone?.replace(/[^\d]/g, '') || "";
+    const whatsappUrl = phoneNumber 
+      ? `https://wa.me/${phoneNumber}?text=${message}`
       : `https://wa.me/?text=${message}`;
     
     window.open(whatsappUrl, '_blank');
     
     toast({
       title: "WhatsApp aberto", 
-      description: whatsappNumber 
+      description: phoneNumber 
         ? `Conversa iniciada com ${proposal.clientName}`
         : `Mensagem preparada para ${proposal.clientName}`,
     });

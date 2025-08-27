@@ -11,6 +11,7 @@ export interface Proposal {
   id: string;
   clientName: string;
   clientEmail: string;
+  clientPhone: string;
   processNumber?: string;
   organizationName?: string;
   cedibleValue: number;
