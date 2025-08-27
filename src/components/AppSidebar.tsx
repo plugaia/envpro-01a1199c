@@ -1,5 +1,5 @@
 import { FileText, Plus, BarChart3, Settings, Users, Mail, Moon, Sun, Monitor, ChevronLeft, ChevronRight } from "lucide-react";
-const logoIcon = "/lovable-uploads/636d6934-d768-4999-a23b-9d1f4a733139.png";
+import logoIcon from "@/assets/envpro-icon-bordered.png";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ export function AppSidebar() {
               {!collapsed && (
                 <>
                   <div className="w-8 h-8 flex items-center justify-center">
-                    <img src={logoIcon} alt="EnvPRO" className="w-8 h-8 object-contain border-8 border-sidebar-border rounded-lg" />
+                    <img src={logoIcon} alt="EnvPRO" className="w-8 h-8 object-contain" />
                   </div>
                   <div>
                     <h2 className="font-bold text-lg text-sidebar-foreground">EnvPRO</h2>
