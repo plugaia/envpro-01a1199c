@@ -102,7 +102,6 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
                 <TableHead className="w-[200px]">Cliente</TableHead>
                 <TableHead className="w-[120px]">Status</TableHead>
                 <TableHead className="w-[100px]">Tipo</TableHead>
-                <TableHead className="w-[140px]">Processo</TableHead>
                 <TableHead className="w-[120px] text-right">Valor Cedível</TableHead>
                 <TableHead className="w-[120px] text-right">Proposta</TableHead>
                 <TableHead className="w-[80px]">Data</TableHead>
@@ -134,25 +133,6 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
                     <Badge variant="outline" className="text-xs">
                       {receiverTypeLabels[proposal.receiverType]}
                     </Badge>
-                  </TableCell>
-                  
-                  <TableCell>
-                    <div className="text-sm">
-                      {proposal.processNumber ? (
-                        <div>
-                          <div className="font-mono text-xs">
-                            {proposal.processNumber.slice(0, 15)}...
-                          </div>
-                          {proposal.organizationName && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {proposal.organizationName}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">N/A</span>
-                      )}
-                    </div>
                   </TableCell>
                   
                   <TableCell className="text-right">
