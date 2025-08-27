@@ -63,7 +63,7 @@ serve(async (req) => {
     // Get lawyer information (proposal creator)
     const { data: lawyerData, error: lawyerError } = await supabase
       .from('profiles')
-      .select('first_name, last_name, avatar_url, user_id')
+      .select('first_name, last_name, avatar_url, phone, user_id')
       .eq('user_id', proposal.created_by)
       .single();
 
@@ -76,13 +76,9 @@ serve(async (req) => {
       proposal.created_by || ''
     );
 
-    // Get lawyer's phone from company data or user metadata
-    let lawyerPhone = '';
+    // Use lawyer's individual phone or fallback to company phone
+    let lawyerPhone = lawyerData?.phone || proposal.companies?.responsible_phone || '';
     let lawyerEmail = lawyerAuth?.user?.email || '';
-    
-    if (proposal.companies) {
-      lawyerPhone = proposal.companies.responsible_phone || '';
-    }
 
     const companyName = proposal.companies?.name || 'Empresa';
     const companyCnpj = proposal.companies?.cnpj || '';

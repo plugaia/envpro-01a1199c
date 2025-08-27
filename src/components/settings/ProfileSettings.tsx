@@ -21,7 +21,8 @@ export function ProfileSettings() {
     last_name: "",
     email: "",
     company_id: "",
-    avatar_url: ""
+    avatar_url: "",
+    phone: ""
   });
 
   useEffect(() => {
@@ -47,7 +48,8 @@ export function ProfileSettings() {
         last_name: data.last_name || "",
         email: user.email || "",
         company_id: data.company_id || "",
-        avatar_url: data.avatar_url || ""
+        avatar_url: data.avatar_url || "",
+        phone: data.phone || ""
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -166,6 +168,7 @@ export function ProfileSettings() {
         .update({
           first_name: validatedData.firstName,
           last_name: validatedData.lastName,
+          phone: profile.phone,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id);
@@ -276,6 +279,19 @@ export function ProfileSettings() {
               onChange={(e) => setProfile(prev => ({ ...prev, last_name: e.target.value }))}
             />
           </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone">WhatsApp</Label>
+          <Input 
+            id="phone" 
+            placeholder="(11) 99999-9999" 
+            value={profile.phone}
+            onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
+            type="tel"
+          />
+          <p className="text-sm text-muted-foreground">
+            Número que aparecerá nas propostas PDF para contato
+          </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
