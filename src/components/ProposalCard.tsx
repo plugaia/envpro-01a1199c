@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Mail, MessageCircle, Eye, MoreHorizontal, Calendar, DollarSign, Share, Download } from "lucide-react";
+import { Mail, MessageCircle, Eye, MoreHorizontal, Calendar, DollarSign, Share, Download, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,8 @@ interface ProposalCardProps {
   onSendEmail: (proposal: Proposal) => void;
   onSendWhatsApp: (proposal: Proposal) => void;
   onView: (proposal: Proposal) => void;
+  onEdit: (proposal: Proposal) => void;
+  onDelete: (proposal: Proposal) => void;
 }
 
 const statusColors = {
@@ -47,7 +49,7 @@ const receiverTypeLabels = {
   precatorio: "Precatório",
 };
 
-export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: ProposalCardProps) {
+export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView, onEdit, onDelete }: ProposalCardProps) {
   const { toast } = useToast();
   
   const formatCurrency = (value: number) => {
@@ -192,7 +194,7 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: 
 
       <CardFooter className="pt-4 border-t border-border">
         <div className="flex items-center justify-between w-full">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               size="sm"
               variant="outline"
@@ -230,13 +232,31 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: 
               PDF
             </Button>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onView(proposal)}
-          >
-            <Eye className="w-4 h-4" />
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onEdit(proposal)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onDelete(proposal)}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onView(proposal)}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </CardFooter>
     </Card>

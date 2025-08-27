@@ -6,6 +6,8 @@ import { type Proposal } from "@/components/ProposalCard";
 import { ProposalForm } from "@/components/ProposalForm";
 import { ProposalFilters, type FilterOptions } from "@/components/ProposalFilters";
 import { ProposalList } from "@/components/ProposalList";
+import { ProposalEditModal } from "@/components/ProposalEditModal";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +18,8 @@ const Index = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [showProposalForm, setShowProposalForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
+  const [deletingProposal, setDeletingProposal] = useState<Proposal | null>(null);
   const [filters, setFilters] = useState<FilterOptions>({
     search: "",
     status: [],
@@ -141,6 +145,49 @@ Equipe LegalProp 📋⚖️`
     window.open(`/proposta/${proposal.id}`, '_blank');
   };
 
+  const handleEditProposal = (proposal: Proposal) => {
+    setEditingProposal(proposal);
+  };
+
+  const handleDeleteProposal = (proposal: Proposal) => {
+    setDeletingProposal(proposal);
+  };
+
+  const confirmDeleteProposal = async () => {
+    if (!deletingProposal) return;
+
+    try {
+      const { error } = await supabase
+        .from('proposals')
+        .delete()
+        .eq('id', deletingProposal.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Proposta excluída!",
+        description: `A proposta de ${deletingProposal.clientName} foi removida com sucesso.`,
+      });
+
+      // Refresh proposals list
+      fetchProposals();
+      setDeletingProposal(null);
+    } catch (error) {
+      console.error('Error deleting proposal:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a proposta. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateProposal = () => {
+    // Refresh proposals list after update
+    fetchProposals();
+    setEditingProposal(null);
+  };
+
   // Filter proposals based on active filters
   const filteredProposals = useMemo(() => {
     return proposals.filter((proposal) => {
@@ -228,6 +275,8 @@ Equipe LegalProp 📋⚖️`
                   onSendEmail={handleSendEmail}
                   onSendWhatsApp={handleSendWhatsApp}
                   onView={handleViewProposal}
+                  onEdit={handleEditProposal}
+                  onDelete={handleDeleteProposal}
                 />
               )}
             </div>
@@ -240,6 +289,27 @@ Equipe LegalProp 📋⚖️`
             onSubmit={handleSubmitProposal}
           />
         )}
+
+        {editingProposal && (
+          <ProposalEditModal
+            proposal={editingProposal}
+            isOpen={!!editingProposal}
+            onClose={() => setEditingProposal(null)}
+            onUpdate={handleUpdateProposal}
+          />
+        )}
+
+        <DeleteConfirmDialog
+          isOpen={!!deletingProposal}
+          onClose={() => setDeletingProposal(null)}
+          onConfirm={confirmDeleteProposal}
+          title="Excluir Proposta"
+          description={
+            deletingProposal
+              ? `Tem certeza que deseja excluir a proposta de ${deletingProposal.clientName}? Esta ação não pode ser desfeita.`
+              : ""
+          }
+        />
       </div>
     </SidebarProvider>
   );

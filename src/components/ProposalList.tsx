@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mail, MessageCircle, Eye, Calendar, DollarSign, FileText, Share, Download } from "lucide-react";
+import { Mail, MessageCircle, Eye, Calendar, DollarSign, FileText, Share, Download, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Proposal } from "@/components/ProposalCard";
@@ -14,6 +14,8 @@ interface ProposalListProps {
   onSendEmail: (proposal: Proposal) => void;
   onSendWhatsApp: (proposal: Proposal) => void;
   onView: (proposal: Proposal) => void;
+  onEdit: (proposal: Proposal) => void;
+  onDelete: (proposal: Proposal) => void;
 }
 
 const statusColors = {
@@ -34,7 +36,7 @@ const receiverTypeLabels = {
   precatorio: "Precatório",
 };
 
-export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }: ProposalListProps) {
+export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView, onEdit, onDelete }: ProposalListProps) {
   const { toast } = useToast();
   
   const formatCurrency = (value: number) => {
@@ -153,7 +155,7 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
                 <TableHead className="w-[120px] text-right">Proposta</TableHead>
                 <TableHead className="w-[80px]">Data</TableHead>
                 <TableHead className="w-[100px]">Responsável</TableHead>
-                <TableHead className="w-[180px] text-center">Ações</TableHead>
+                <TableHead className="w-[250px] text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -209,55 +211,73 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
                     )}
                   </TableCell>
                   
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleSendEmail(proposal)}
-                        className="h-7 w-7 p-0"
-                        title="Enviar por Email"
-                      >
-                        <Mail className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onSendWhatsApp(proposal)}
-                        className="h-7 w-7 p-0"
-                        title="Enviar por WhatsApp"
-                      >
-                        <MessageCircle className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleShareLink(proposal)}
-                        className="h-7 w-7 p-0"
-                        title="Compartilhar Link"
-                      >
-                        <Share className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDownloadPDF(proposal)}
-                        className="h-7 w-7 p-0"
-                        title="Baixar PDF"
-                      >
-                        <Download className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onView(proposal)}
-                        className="h-7 w-7 p-0"
-                        title="Visualizar"
-                      >
-                        <Eye className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                   <TableCell>
+                     <div className="flex items-center justify-center gap-1 flex-wrap">
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => handleSendEmail(proposal)}
+                         className="h-7 w-7 p-0"
+                         title="Enviar por Email"
+                       >
+                         <Mail className="w-3 h-3" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => onSendWhatsApp(proposal)}
+                         className="h-7 w-7 p-0"
+                         title="Enviar por WhatsApp"
+                       >
+                         <MessageCircle className="w-3 h-3" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => handleShareLink(proposal)}
+                         className="h-7 w-7 p-0"
+                         title="Compartilhar Link"
+                       >
+                         <Share className="w-3 h-3" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => handleDownloadPDF(proposal)}
+                         className="h-7 w-7 p-0"
+                         title="Baixar PDF"
+                       >
+                         <Download className="w-3 h-3" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => onEdit(proposal)}
+                         className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                         title="Editar"
+                       >
+                         <Edit className="w-3 h-3" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => onDelete(proposal)}
+                         className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                         title="Excluir"
+                       >
+                         <Trash2 className="w-3 h-3" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="ghost"
+                         onClick={() => onView(proposal)}
+                         className="h-7 w-7 p-0"
+                         title="Visualizar"
+                       >
+                         <Eye className="w-3 h-3" />
+                       </Button>
+                     </div>
+                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
