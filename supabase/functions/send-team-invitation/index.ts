@@ -108,9 +108,13 @@ serve(async (req) => {
       );
     }
 
-    // Get company info for the email
-    const { data: { user }, error: userError } = await userSupabase.auth.getUser();
+    // Get company info for the email - use service role to get user info
+    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(
+      (await userSupabase.auth.getUser()).data.user?.id || ''
+    );
+    
     if (userError || !user) {
+      console.error('User error:', userError);
       return new Response(
         JSON.stringify({ error: 'Failed to get user information' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
