@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,14 +8,146 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Settings, User, Mail, Bell, Shield, Download, Upload, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Settings, User, Mail, Bell, Shield, Download, Upload, Trash2, Users, UserPlus, Clock, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const Configuracoes = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [whatsappNotifications, setWhatsappNotifications] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteData, setInviteData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    whatsappNumber: ''
+  });
+  const [isInviting, setIsInviting] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      checkAdminStatus();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (isAdmin && user) {
+      fetchTeamData();
+    }
+  }, [isAdmin, user]);
+
+  const checkAdminStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: adminCheck, error } = await supabase
+        .rpc('is_admin', { user_id: user.id });
+      
+      if (error) throw error;
+      setIsAdmin(adminCheck || false);
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+    }
+  };
+
+  const fetchTeamData = async () => {
+    if (!isAdmin || !user) return;
+    
+    try {
+      const companyId = await getUserCompanyId();
+      
+      // Fetch team members
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*, companies(name)')
+        .eq('company_id', companyId);
+      
+      if (profilesError) throw profilesError;
+      setTeamMembers(profiles || []);
+
+      // Fetch pending invitations
+      const { data: invitations, error: invitationsError } = await supabase
+        .from('team_invitations')
+        .select('*')
+        .eq('status', 'pending')
+        .eq('company_id', companyId);
+      
+      if (invitationsError) throw invitationsError;
+      setPendingInvitations(invitations || []);
+    } catch (error) {
+      console.error('Error fetching team data:', error);
+    }
+  };
+
+  const getUserCompanyId = async () => {
+    const { data, error } = await supabase
+      .rpc('get_user_company_id', { user_id: user.id });
+    if (error) throw error;
+    return data;
+  };
+
+  const handleSendInvitation = async () => {
+    if (!inviteData.firstName || !inviteData.lastName || !inviteData.email) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Nome, sobrenome e email são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-team-invitation', {
+        body: {
+          email: inviteData.email,
+          firstName: inviteData.firstName,
+          lastName: inviteData.lastName,
+          whatsappNumber: inviteData.whatsappNumber || null
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Convite enviado!",
+        description: `Convite enviado para ${inviteData.email}`,
+      });
+
+      setShowInviteModal(false);
+      setInviteData({ firstName: '', lastName: '', email: '', whatsappNumber: '' });
+      fetchTeamData(); // Refresh data
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      toast({
+        title: "Erro ao enviar convite",
+        description: error.message || "Ocorreu um erro ao enviar o convite.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const formatWhatsApp = (value) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length <= 2) return `(${cleaned}`;
+    if (cleaned.length <= 7) return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7, 11)}`;
+  };
+
+  const handleWhatsAppChange = (e) => {
+    const formatted = formatWhatsApp(e.target.value);
+    setInviteData(prev => ({ ...prev, whatsappNumber: formatted }));
+  };
 
   const handleSaveSettings = () => {
     toast({
@@ -180,6 +312,143 @@ const Configuracoes = () => {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Team Management - Only for Admins */}
+              {isAdmin && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-primary" />
+                      <CardTitle>Gerenciamento de Equipe</CardTitle>
+                    </div>
+                    <CardDescription>
+                      Gerencie membros da equipe e convites pendentes
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Invite New Member */}
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium">Membros da Equipe</h3>
+                      <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
+                        <DialogTrigger asChild>
+                          <Button className="flex items-center gap-2">
+                            <UserPlus className="w-4 h-4" />
+                            Convidar Membro
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Convidar Novo Membro</DialogTitle>
+                            <DialogDescription>
+                              Envie um convite para um novo membro se juntar à sua equipe
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="firstName">Nome</Label>
+                                <Input
+                                  id="firstName"
+                                  value={inviteData.firstName}
+                                  onChange={(e) => setInviteData(prev => ({ ...prev, firstName: e.target.value }))}
+                                  placeholder="João"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="lastName">Sobrenome</Label>
+                                <Input
+                                  id="lastName"
+                                  value={inviteData.lastName}
+                                  onChange={(e) => setInviteData(prev => ({ ...prev, lastName: e.target.value }))}
+                                  placeholder="Silva"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="email">Email</Label>
+                              <Input
+                                id="email"
+                                type="email"
+                                value={inviteData.email}
+                                onChange={(e) => setInviteData(prev => ({ ...prev, email: e.target.value }))}
+                                placeholder="joao.silva@empresa.com"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="whatsapp">WhatsApp (opcional)</Label>
+                              <Input
+                                id="whatsapp"
+                                value={inviteData.whatsappNumber}
+                                onChange={handleWhatsAppChange}
+                                placeholder="(11) 99999-9999"
+                                maxLength={15}
+                              />
+                            </div>
+                            <Button 
+                              onClick={handleSendInvitation} 
+                              disabled={isInviting}
+                              className="w-full"
+                            >
+                              {isInviting ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                                  Enviando...
+                                </>
+                              ) : (
+                                'Enviar Convite'
+                              )}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+
+                    {/* Current Team Members */}
+                    <div className="space-y-3">
+                      {teamMembers.map((member) => (
+                        <div key={member.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                          <div>
+                            <p className="font-medium">{member.first_name} {member.last_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {member.role === 'admin' ? 'Administrador' : 'Colaborador'}
+                            </p>
+                          </div>
+                          <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
+                            {member.role === 'admin' ? 'Admin' : 'Membro'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Pending Invitations */}
+                    {pendingInvitations.length > 0 && (
+                      <>
+                        <Separator />
+                        <div>
+                          <h4 className="font-medium mb-3 flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Convites Pendentes
+                          </h4>
+                          <div className="space-y-3">
+                            {pendingInvitations.map((invitation) => (
+                              <div key={invitation.id} className="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30">
+                                <div>
+                                  <p className="font-medium">{invitation.first_name} {invitation.last_name}</p>
+                                  <p className="text-sm text-muted-foreground">{invitation.email}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Expira em: {new Date(invitation.expires_at).toLocaleDateString('pt-BR')}
+                                  </p>
+                                </div>
+                                <Badge variant="outline">Pendente</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Data Management */}
               <Card>
