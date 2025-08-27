@@ -57,7 +57,7 @@ export function AppSidebar() {
                     <Mail className="w-5 h-5 text-sidebar-primary-foreground" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-lg text-sidebar-foreground">LegalProp</h2>
+                    <h2 className="font-bold text-lg text-sidebar-foreground">EnvPRO</h2>
                     <p className="text-xs text-sidebar-foreground/70">Propostas Jurídicas</p>
                   </div>
                 </>
