@@ -114,6 +114,24 @@ export function UserSettings() {
 
     try {
       setInviteLoading(true);
+      
+      console.log('Starting invitation process...');
+      console.log('Current user:', currentUser);
+      
+      // Test admin status first
+      const { data: adminCheck, error: adminError } = await supabase
+        .rpc('has_role', { _user_id: currentUser?.id, _role: 'admin' });
+      
+      console.log('Admin check result:', { adminCheck, adminError });
+      
+      if (adminError) {
+        console.error('Admin check error:', adminError);
+        throw new Error('Erro ao verificar permissões de administrador');
+      }
+      
+      if (!adminCheck) {
+        throw new Error('Você precisa ter permissões de administrador para enviar convites');
+      }
 
       // Create team invitation
       const { data, error } = await supabase
@@ -123,6 +141,8 @@ export function UserSettings() {
           p_last_name: inviteForm.lastName,
           p_whatsapp_number: inviteForm.whatsapp || null
         });
+        
+      console.log('RPC result:', { data, error });
 
       if (error) throw error;
 
