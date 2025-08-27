@@ -133,4 +133,19 @@
     box-shadow: var(--shadow-glow);
     transform: translateY(-2px);
   }
+
+  /* Fix sidebar width issues */
+  .group[data-side="left"] {
+    min-width: 16rem;
+  }
+
+  .group[data-side="left"][data-state="collapsed"] {
+    min-width: 3rem;
+  }
+
+  .group-data-\[side\=left\]\:border-r {
+    border-right-width: 1px;
+    padding: 0;
+    min-width: 3rem;
+  }
 }
