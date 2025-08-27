@@ -1,4 +1,4 @@
-import { FileText, Plus, BarChart3, Settings, Users, Mail, Moon, Sun, Monitor } from "lucide-react";
+import { FileText, Plus, BarChart3, Settings, Users, Mail, Moon, Sun, Monitor, ChevronLeft, ChevronRight } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -47,24 +48,37 @@ export function AppSidebar() {
       collapsible="icon"
     >
       <SidebarContent className="bg-sidebar">
-        {/* Logo */}
+        {/* Logo with Collapse Button */}
         <div className="p-4 border-b border-sidebar-border bg-sidebar">
-          {!collapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                <Mail className="w-5 h-5 text-sidebar-primary-foreground" />
-              </div>
-              <div>
-                <h2 className="font-bold text-lg text-sidebar-foreground">LegalProp</h2>
-                <p className="text-xs text-sidebar-foreground/70">Propostas Jurídicas</p>
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-1">
+              {!collapsed && (
+                <>
+                  <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-sidebar-primary-foreground" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-lg text-sidebar-foreground">LegalProp</h2>
+                    <p className="text-xs text-sidebar-foreground/70">Propostas Jurídicas</p>
+                  </div>
+                </>
+              )}
+              {collapsed && (
+                <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center mx-auto">
+                  <Mail className="w-5 h-5 text-sidebar-primary-foreground" />
+                </div>
+              )}
             </div>
-          )}
-          {collapsed && (
-            <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center mx-auto">
-              <Mail className="w-5 h-5 text-sidebar-primary-foreground" />
-            </div>
-          )}
+            
+            {/* Collapse Arrow Button */}
+            <SidebarTrigger className="ml-auto p-1.5 h-8 w-8 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-md transition-colors">
+              {collapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </SidebarTrigger>
+          </div>
         </div>
 
         <SidebarGroup className="bg-sidebar">
