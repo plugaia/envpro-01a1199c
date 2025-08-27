@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -189,9 +187,9 @@ const Clientes = () => {
   };
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="flex-1 flex flex-col">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 border-b border-border bg-card flex items-center justify-between px-6 z-10">
+      <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -212,7 +210,7 @@ const Clientes = () => {
         </Button>
       </header>
       
-      <main className="flex-1 p-6 mt-16">
+      <main className="flex-1 p-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
