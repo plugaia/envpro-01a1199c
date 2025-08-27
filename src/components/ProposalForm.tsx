@@ -70,12 +70,10 @@ export function ProposalForm({ onClose, onSubmit }: ProposalFormProps) {
         throw new Error('Perfil de usuário não encontrado');
       }
 
-      // Create proposal (with temporary values for required fields, sensitive data in separate table)
+      // Create proposal (sensitive data will be stored separately)
       const proposalData = {
         company_id: profile.company_id,
         client_name: formData.clientName,
-        client_email: 'temp@example.com', // Temporary value, will be removed later
-        client_phone: '+55000000000', // Temporary value, will be removed later
         process_number: formData.processNumber || null,
         organization_name: formData.organizationName || null,
         cedible_value: parseFloat(formData.cedibleValue.replace(/[^\d,]/g, '').replace(',', '.')),

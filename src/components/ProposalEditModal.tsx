@@ -54,7 +54,7 @@ export function ProposalEditModal({ proposal, isOpen, onClose, onUpdate }: Propo
     setLoading(true);
 
     try {
-      // Update proposal (without sensitive data)
+      // Update proposal (sensitive data handled separately)
       const { error: proposalError } = await supabase
         .from('proposals')
         .update({

@@ -216,9 +216,7 @@ export type Database = {
         Row: {
           assignee: string | null
           cedible_value: number
-          client_email: string
           client_name: string
-          client_phone: string
           company_id: string
           created_at: string
           created_by: string | null
@@ -235,9 +233,7 @@ export type Database = {
         Insert: {
           assignee?: string | null
           cedible_value: number
-          client_email: string
           client_name: string
-          client_phone: string
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -254,9 +250,7 @@ export type Database = {
         Update: {
           assignee?: string | null
           cedible_value?: number
-          client_email?: string
           client_name?: string
-          client_phone?: string
           company_id?: string
           created_at?: string
           created_by?: string | null
