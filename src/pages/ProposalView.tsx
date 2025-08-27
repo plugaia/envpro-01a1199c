@@ -29,11 +29,16 @@ const ProposalView = () => {
 
   const fetchProposal = async () => {
     try {
+      console.log('Fetching proposal with ID:', proposalId);
+      
       const { data, error } = await supabase
         .from('proposals')
         .select('*, companies(name)')
         .eq('id', proposalId)
         .single();
+
+      console.log('Proposal data:', data);
+      console.log('Proposal error:', error);
 
       if (error) throw error;
       

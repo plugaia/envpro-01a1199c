@@ -50,7 +50,7 @@ serve(async (req) => {
       );
     }
 
-    const proposalUrl = `${Deno.env.get('SUPABASE_URL')?.replace('supabase.co', 'lovable.app') || 'https://app.lovable.app'}/proposta/${proposalId}`;
+    const proposalUrl = `https://409390a7-b191-4aa2-80d6-e46a971d8713.sandbox.lovable.dev/proposta/${proposalId}`;
     const companyName = proposal.companies?.name || 'Empresa';
     
     const formatCurrency = (value: number) => {
