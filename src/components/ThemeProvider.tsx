@@ -53,11 +53,11 @@ export function ThemeProvider({
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
+    setTheme: (newTheme: Theme) => {
       if (typeof window !== "undefined") {
-        localStorage.setItem("theme", theme);
+        localStorage.setItem("theme", newTheme);
       }
-      setTheme(theme);
+      setTheme(newTheme);
     },
   };
 
