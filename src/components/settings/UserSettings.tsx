@@ -19,23 +19,15 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'moderator' | 'user';
-  status: 'active' | 'inactive';
-  lastLogin: Date | null;
+  role: 'admin' | 'collaborator';
+  isActive: boolean;
   createdAt: Date;
 }
 
 const roleLabels = {
   admin: 'Administrador',
-  moderator: 'Moderador',
-  user: 'Usuário'
+  collaborator: 'Colaborador'
 };
-
-const roleColors = {
-  admin: 'destructive',
-  moderator: 'default',
-  user: 'secondary'
-} as const;
 
 export function UserSettings() {
   const { toast } = useToast();
@@ -44,71 +36,58 @@ export function UserSettings() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showInviteDialog, setShowInviteDialog] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<'admin' | 'moderator' | 'user'>('user');
+  const [inviteForm, setInviteForm] = useState({
+    firstName: "",
+    lastName: "", 
+    email: "",
+    whatsapp: ""
+  });
   const [inviteLoading, setInviteLoading] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (currentUser) {
+      fetchUsers();
+    }
+  }, [currentUser]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       
-      // Check if current user is admin to view users
-      const { data: currentUserRole } = await supabase
-        .rpc('has_role', { _user_id: currentUser?.id, _role: 'admin' });
-
-      if (!currentUserRole) {
-        toast({
-          title: "Acesso negado",
-          description: "Apenas administradores podem gerenciar usuários.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Fetch all users with their profiles and roles
+      // Fetch all users from profiles table (includes role)
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           user_id,
           first_name,
           last_name,
+          role,
+          is_active,
           created_at
         `);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        if (profilesError.message.includes('permission denied')) {
+          toast({
+            title: "Acesso restrito",
+            description: "Apenas administradores podem visualizar usuários.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw profilesError;
+      }
 
-      // Fetch user roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) throw rolesError;
-
-      // Fetch user emails from auth.users (admin only)
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) throw authError;
-
-      // Combine data
-      const combinedUsers: User[] = profilesData.map(profile => {
-        const authUser = authData.users.find(u => u.id === profile.user_id);
-        const userRole = rolesData.find(r => r.user_id === profile.user_id);
-        
-        return {
-          id: profile.user_id,
-          email: authUser?.email || '',
-          firstName: profile.first_name || '',
-          lastName: profile.last_name || '',
-          role: userRole?.role || 'user',
-          status: authUser?.email_confirmed_at ? 'active' : 'inactive',
-          lastLogin: authUser?.last_sign_in_at ? new Date(authUser.last_sign_in_at) : null,
-          createdAt: new Date(profile.created_at)
-        };
-      });
+      // Create simplified users list from profile data
+      const combinedUsers: User[] = profilesData.map(profile => ({
+        id: profile.user_id,
+        email: `user-${profile.user_id.slice(0, 8)}@empresa.com`, // Placeholder since we can't access auth.users
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        role: profile.role as 'admin' | 'collaborator',
+        isActive: profile.is_active,
+        createdAt: new Date(profile.created_at)
+      }));
 
       setUsers(combinedUsers);
     } catch (error) {
@@ -124,10 +103,10 @@ export function UserSettings() {
   };
 
   const handleInviteUser = async () => {
-    if (!inviteEmail.trim()) {
+    if (!inviteForm.firstName.trim() || !inviteForm.lastName.trim() || !inviteForm.email.trim()) {
       toast({
-        title: "Email obrigatório",
-        description: "Por favor, insira um email válido.",
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha nome, sobrenome e email.",
         variant: "destructive",
       });
       return;
@@ -136,33 +115,32 @@ export function UserSettings() {
     try {
       setInviteLoading(true);
 
-      // Send team invitation
-      const { error } = await supabase.functions.invoke('send-team-invitation', {
-        body: {
-          email: inviteEmail,
-          role: inviteRole,
-          invitedBy: currentUser?.id
-        }
-      });
+      // Create team invitation
+      const { data, error } = await supabase
+        .rpc('create_team_invitation', {
+          p_email: inviteForm.email,
+          p_first_name: inviteForm.firstName,
+          p_last_name: inviteForm.lastName,
+          p_whatsapp_number: inviteForm.whatsapp || null
+        });
 
       if (error) throw error;
 
       toast({
-        title: "Convite enviado!",
-        description: `Convite enviado para ${inviteEmail} com role de ${roleLabels[inviteRole]}.`,
+        title: "Convite criado!",
+        description: `Convite para ${inviteForm.firstName} ${inviteForm.lastName} foi criado. Agora você pode enviar o link de convite.`,
       });
 
-      setInviteEmail("");
-      setInviteRole('user');
+      setInviteForm({ firstName: "", lastName: "", email: "", whatsapp: "" });
       setShowInviteDialog(false);
       
       // Refresh users list
       await fetchUsers();
     } catch (error) {
-      console.error('Error inviting user:', error);
+      console.error('Error creating invitation:', error);
       toast({
-        title: "Erro ao enviar convite",
-        description: "Não foi possível enviar o convite. Tente novamente.",
+        title: "Erro ao criar convite",
+        description: "Não foi possível criar o convite. Verifique se você tem permissão de administrador.",
         variant: "destructive",
       });
     } finally {
@@ -170,11 +148,12 @@ export function UserSettings() {
     }
   };
 
-  const handleUpdateUserRole = async (userId: string, newRole: 'admin' | 'moderator' | 'user') => {
+  const handleUpdateUserRole = async (userId: string, newRole: 'admin' | 'collaborator') => {
     try {
       const { error } = await supabase
-        .from('user_roles')
-        .upsert({ user_id: userId, role: newRole });
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('user_id', userId);
 
       if (error) throw error;
 
@@ -183,14 +162,41 @@ export function UserSettings() {
       ));
 
       toast({
-        title: "Role atualizada",
-        description: `Role do usuário atualizada para ${roleLabels[newRole]}.`,
+        title: "Perfil atualizado",
+        description: `Perfil do usuário atualizado para ${roleLabels[newRole]}.`,
       });
     } catch (error) {
       console.error('Error updating user role:', error);
       toast({
-        title: "Erro ao atualizar role",
-        description: "Não foi possível atualizar a role do usuário.",
+        title: "Erro ao atualizar perfil",
+        description: "Não foi possível atualizar o perfil do usuário.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: !isActive })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      setUsers(prev => prev.map(user => 
+        user.id === userId ? { ...user, isActive: !isActive } : user
+      ));
+
+      toast({
+        title: "Status atualizado",
+        description: `Usuário ${!isActive ? 'ativado' : 'desativado'} com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status do usuário.",
         variant: "destructive",
       });
     }
@@ -205,9 +211,8 @@ export function UserSettings() {
     );
   });
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return 'Nunca';
-    return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR });
+  const formatDate = (date: Date) => {
+    return format(date, "dd/MM/yyyy", { locale: ptBR });
   };
 
   return (
@@ -222,7 +227,7 @@ export function UserSettings() {
               <div>
                 <CardTitle>Gerenciamento de Usuários</CardTitle>
                 <CardDescription>
-                  Gerencie usuários, roles e permissões do sistema
+                  Gerencie usuários e suas permissões no sistema
                 </CardDescription>
               </div>
             </div>
@@ -237,32 +242,48 @@ export function UserSettings() {
                 <DialogHeader>
                   <DialogTitle>Convidar Novo Usuário</DialogTitle>
                   <DialogDescription>
-                    Envie um convite para um novo usuário se juntar ao sistema.
+                    Crie um convite para um novo usuário se juntar à equipe.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">Nome</Label>
+                      <Input
+                        id="firstName"
+                        placeholder="Nome"
+                        value={inviteForm.firstName}
+                        onChange={(e) => setInviteForm(prev => ({ ...prev, firstName: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Sobrenome</Label>
+                      <Input
+                        id="lastName"
+                        placeholder="Sobrenome"
+                        value={inviteForm.lastName}
+                        onChange={(e) => setInviteForm(prev => ({ ...prev, lastName: e.target.value }))}
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
-                    <Label htmlFor="invite-email">Email</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
-                      id="invite-email"
+                      id="email"
                       type="email"
                       placeholder="usuario@email.com"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="invite-role">Role</Label>
-                    <Select value={inviteRole} onValueChange={(value: 'admin' | 'moderator' | 'user') => setInviteRole(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">Usuário</SelectItem>
-                        <SelectItem value="moderator">Moderador</SelectItem>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="whatsapp">WhatsApp (opcional)</Label>
+                    <Input
+                      id="whatsapp"
+                      placeholder="+55 11 99999-9999"
+                      value={inviteForm.whatsapp}
+                      onChange={(e) => setInviteForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                    />
                   </div>
                   <div className="flex gap-3">
                     <Button 
@@ -277,7 +298,7 @@ export function UserSettings() {
                       disabled={inviteLoading}
                       className="flex-1"
                     >
-                      {inviteLoading ? "Enviando..." : "Enviar Convite"}
+                      {inviteLoading ? "Criando..." : "Criar Convite"}
                     </Button>
                   </div>
                 </div>
@@ -288,12 +309,12 @@ export function UserSettings() {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="card-elegant">
+          <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-primary/10">
-                <Users className="w-5 h-5 text-primary" />
+              <div className="p-3 rounded-full bg-primary/10">
+                <Users className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total de Usuários</p>
@@ -303,11 +324,11 @@ export function UserSettings() {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-4">
+        <Card className="card-elegant">
+          <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-destructive/10">
-                <UserCheck className="w-5 h-5 text-destructive" />
+              <div className="p-3 rounded-full bg-destructive/10">
+                <UserCheck className="w-6 h-6 text-destructive" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Administradores</p>
@@ -317,29 +338,15 @@ export function UserSettings() {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-4">
+        <Card className="card-elegant">
+          <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-success/10">
-                <UserCheck className="w-5 h-5 text-success" />
+              <div className="p-3 rounded-full bg-success/10">
+                <UserCheck className="w-6 h-6 text-success" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Usuários Ativos</p>
-                <p className="text-2xl font-bold">{users.filter(u => u.status === 'active').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-warning/10">
-                <Mail className="w-5 h-5 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pendentes</p>
-                <p className="text-2xl font-bold">{users.filter(u => u.status === 'inactive').length}</p>
+                <p className="text-2xl font-bold">{users.filter(u => u.isActive).length}</p>
               </div>
             </div>
           </CardContent>
@@ -348,7 +355,7 @@ export function UserSettings() {
 
       {/* Search */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-6">
           <div className="flex items-center gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -370,7 +377,7 @@ export function UserSettings() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex items-center justify-center p-8">
+            <div className="flex items-center justify-center p-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
@@ -379,10 +386,8 @@ export function UserSettings() {
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead>Usuário</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
+                    <TableHead>Perfil</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Último Login</TableHead>
                     <TableHead>Data de Cadastro</TableHead>
                     <TableHead className="text-center">Ações</TableHead>
                   </TableRow>
@@ -391,54 +396,46 @@ export function UserSettings() {
                   {filteredUsers.map((user) => (
                     <TableRow key={user.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell>
-                        <div className="font-medium">
-                          {user.firstName} {user.lastName}
+                        <div>
+                          <div className="font-medium">
+                            {user.firstName} {user.lastName}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{user.email}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{user.email}</TableCell>
                       <TableCell>
                         <Select
                           value={user.role}
-                          onValueChange={(value: 'admin' | 'moderator' | 'user') => handleUpdateUserRole(user.id, value)}
+                          onValueChange={(value: 'admin' | 'collaborator') => handleUpdateUserRole(user.id, value)}
                           disabled={user.id === currentUser?.id}
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-36">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">Usuário</SelectItem>
-                            <SelectItem value="moderator">Moderador</SelectItem>
+                            <SelectItem value="collaborator">Colaborador</SelectItem>
                             <SelectItem value="admin">Administrador</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
-                          {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                          {user.isActive ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </TableCell>
-                      <TableCell>{formatDate(user.lastLogin)}</TableCell>
                       <TableCell>{formatDate(user.createdAt)}</TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center gap-2">
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => handleToggleUserStatus(user.id, user.isActive)}
+                            disabled={user.id === currentUser?.id}
                             className="h-8 w-8 p-0"
-                            title="Editar"
+                            title={user.isActive ? "Desativar" : "Ativar"}
                           >
-                            <Edit className="w-4 h-4" />
+                            <UserCheck className="w-4 h-4" />
                           </Button>
-                          {user.id !== currentUser?.id && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                              title="Remover"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>

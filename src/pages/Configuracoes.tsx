@@ -4,12 +4,14 @@ import { CompanySettings } from "@/components/settings/CompanySettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { SecuritySettings } from "@/components/settings/SecuritySettings";
 import { ThemeSettings } from "@/components/settings/ThemeSettings";
+import { UserSettings } from "@/components/settings/UserSettings";
 import { 
   User, 
   Building2, 
   Bell, 
   Shield, 
-  Palette 
+  Palette,
+  Users
 } from "lucide-react";
 
 export default function Configuracoes() {
@@ -22,7 +24,7 @@ export default function Configuracoes() {
 
       <div className="flex-1 min-h-0">
         <Tabs defaultValue="profile" className="space-y-8 h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-5 bg-muted/50 p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-6 bg-muted/50 p-1 rounded-lg">
             <TabsTrigger value="profile" className="flex items-center gap-2 data-[state=active]:bg-background">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Perfil</span>
@@ -38,6 +40,10 @@ export default function Configuracoes() {
             <TabsTrigger value="theme" className="flex items-center gap-2 data-[state=active]:bg-background">
               <Palette className="h-4 w-4" />
               <span className="hidden sm:inline">Tema</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-background">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Usuários</span>
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2 data-[state=active]:bg-background">
               <Shield className="h-4 w-4" />
@@ -60,6 +66,10 @@ export default function Configuracoes() {
 
             <TabsContent value="theme" className="space-y-6 mt-0 h-full">
               <ThemeSettings />
+            </TabsContent>
+
+            <TabsContent value="users" className="space-y-6 mt-0 h-full">
+              <UserSettings />
             </TabsContent>
 
             <TabsContent value="security" className="space-y-6 mt-0 h-full">
