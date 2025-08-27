@@ -331,39 +331,41 @@ Equipe EnvPRO 📋⚖️`
   }, [proposals, filters]);
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-4 md:mb-6">
-        <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">
+    <div className="space-y-6 h-full">
+      <div className="space-y-2">
+        <h2 className="text-2xl md:text-3xl font-bold text-foreground">
           Propostas Jurídicas
         </h2>
-        <p className="text-sm md:text-base text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           Gerencie e envie suas propostas para clientes via email ou WhatsApp
         </p>
       </div>
 
-      {/* Filters */}
-      <ProposalFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        totalCount={proposals.length}
-        filteredCount={filteredProposals.length}
-      />
-
-      {/* Proposals List */}
-      {loading ? (
-        <div className="flex items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        <ProposalList
-          proposals={filteredProposals}
-          onSendEmail={handleSendEmail}
-          onSendWhatsApp={handleSendWhatsApp}
-          onView={handleViewProposal}
-          onEdit={handleEditProposal}
-          onDelete={handleDeleteProposal}
+      <div className="space-y-6">
+        {/* Filters */}
+        <ProposalFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          totalCount={proposals.length}
+          filteredCount={filteredProposals.length}
         />
-      )}
+
+        {/* Proposals List */}
+        {loading ? (
+          <div className="flex items-center justify-center p-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <ProposalList
+            proposals={filteredProposals}
+            onSendEmail={handleSendEmail}
+            onSendWhatsApp={handleSendWhatsApp}
+            onView={handleViewProposal}
+            onEdit={handleEditProposal}
+            onDelete={handleDeleteProposal}
+          />
+        )}
+      </div>
 
       {editingProposal && (
         <ProposalEditModal

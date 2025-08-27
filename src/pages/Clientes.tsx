@@ -216,24 +216,26 @@ const Clientes = () => {
             </Button>
           </header>
           
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-4 md:p-6 lg:p-8">
             {loading ? (
-              <div className="flex items-center justify-center p-8">
+              <div className="flex items-center justify-center p-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-            <div className="max-w-7xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-8">
               
               {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="card-elegant">
+                  <CardContent className="p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Total de Clientes</p>
-                        <p className="text-2xl font-bold text-primary">{clients.length}</p>
+                        <p className="text-3xl font-bold text-primary">{clients.length}</p>
                       </div>
-                      <Users className="w-8 h-8 text-primary/60" />
+                      <div className="p-3 rounded-full bg-primary/10">
+                        <Users className="w-8 h-8 text-primary" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

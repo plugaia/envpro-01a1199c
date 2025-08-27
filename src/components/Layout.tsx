@@ -27,8 +27,10 @@ export function Layout({ children }: LayoutProps) {
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <Header onNewProposal={handleNewProposal} />
-          <main className="flex-1 p-6 bg-muted/30">
-            {children}
+          <main className="flex-1 p-4 md:p-6 lg:p-8 bg-muted/30 min-h-0">
+            <div className="max-w-7xl mx-auto h-full">
+              {children}
+            </div>
           </main>
         </div>
         

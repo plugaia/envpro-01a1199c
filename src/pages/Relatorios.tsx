@@ -213,28 +213,30 @@ const Relatorios = () => {
             </div>
           </header>
           
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-4 md:p-6 lg:p-8">
             {loading ? (
-              <div className="flex items-center justify-center p-8">
+              <div className="flex items-center justify-center p-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-            <div className="max-w-7xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-8">
               
               {/* KPI Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card>
-                  <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="card-elegant">
+                  <CardContent className="p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Total de Propostas</p>
-                        <p className="text-2xl font-bold text-foreground">{stats.totalProposals}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <TrendingUp className="w-3 h-3 text-success" />
-                          <span className="text-xs text-success">+12% vs mês anterior</span>
+                        <p className="text-3xl font-bold text-foreground">{stats.totalProposals}</p>
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="w-4 h-4 text-success" />
+                          <span className="text-sm text-success">+12% vs mês anterior</span>
                         </div>
                       </div>
-                      <FileText className="w-8 h-8 text-primary/60" />
+                      <div className="p-3 rounded-full bg-primary/10">
+                        <FileText className="w-8 h-8 text-primary" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
