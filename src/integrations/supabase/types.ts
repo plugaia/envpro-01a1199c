@@ -245,11 +245,68 @@ export type Database = {
           },
         ]
       }
+      team_invitations: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          email: string
+          expires_at: string
+          first_name: string
+          id: string
+          invitation_token: string
+          invited_by: string
+          last_name: string
+          status: string
+          updated_at: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          email: string
+          expires_at?: string
+          first_name: string
+          id?: string
+          invitation_token: string
+          invited_by: string
+          last_name: string
+          status?: string
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          first_name?: string
+          id?: string
+          invitation_token?: string
+          invited_by?: string
+          last_name?: string
+          status?: string
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invitations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      accept_team_invitation: {
+        Args: { p_invitation_token: string; p_user_id: string }
+        Returns: boolean
+      }
       create_notification: {
         Args: {
           p_data?: Json
@@ -263,6 +320,18 @@ export type Database = {
       create_proposal_access_token: {
         Args: { p_proposal_id: string }
         Returns: string
+      }
+      create_team_invitation: {
+        Args: {
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_whatsapp_number?: string
+        }
+        Returns: {
+          invitation_id: string
+          invitation_token: string
+        }[]
       }
       get_proposal_by_token: {
         Args: { access_token: string }

@@ -13,6 +13,7 @@ import Configuracoes from "./pages/Configuracoes";
 import Clientes from "./pages/Clientes";
 import Relatorios from "./pages/Relatorios";
 import NotFound from "./pages/NotFound";
+import TeamInvitation from "./pages/TeamInvitation";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/auth" element={!user ? <Auth /> : <Index />} />
+      <Route path="/convite/:token" element={<TeamInvitation />} />
       <Route path="/proposta/:proposalId" element={<ProposalView />} />
       <Route path="/" element={
         user ? (
