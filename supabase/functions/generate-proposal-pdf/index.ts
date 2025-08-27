@@ -60,6 +60,30 @@ serve(async (req) => {
 
     const clientContact = contactData[0];
 
+    // Get lawyer information (proposal creator)
+    const { data: lawyerData, error: lawyerError } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, avatar_url, user_id')
+      .eq('user_id', proposal.created_by)
+      .single();
+
+    if (lawyerError) {
+      console.error('Lawyer data fetch error:', lawyerError);
+    }
+
+    // Get lawyer's auth data for email
+    const { data: lawyerAuth, error: lawyerAuthError } = await supabase.auth.admin.getUserById(
+      proposal.created_by || ''
+    );
+
+    // Get lawyer's phone from company data or user metadata
+    let lawyerPhone = '';
+    let lawyerEmail = lawyerAuth?.user?.email || '';
+    
+    if (proposal.companies) {
+      lawyerPhone = proposal.companies.responsible_phone || '';
+    }
+
     const companyName = proposal.companies?.name || 'Empresa';
     const companyCnpj = proposal.companies?.cnpj || '';
     
@@ -100,8 +124,12 @@ serve(async (req) => {
           .value-item .label { font-size: 12px; color: #666; margin-bottom: 5px; }
           .value-item .amount { font-size: 18px; font-weight: bold; }
           .proposal-value { background: #e3f2fd; color: #1976d2; }
-          .footer { border-top: 1px solid #dee2e6; padding-top: 20px; text-align: center; color: #666; font-size: 12px; }
-          .disclaimer { background: #fff3cd; padding: 15px; border-radius: 6px; margin: 20px 0; font-size: 14px; }
+           .footer { border-top: 1px solid #dee2e6; padding-top: 20px; text-align: center; color: #666; font-size: 12px; }
+           .disclaimer { background: #fff3cd; padding: 15px; border-radius: 6px; margin: 20px 0; font-size: 14px; }
+           .lawyer-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+           .lawyer-avatar { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 10px; display: block; object-fit: cover; }
+           .lawyer-details { color: #333; font-size: 14px; }
+           .lawyer-details p { margin: 5px 0; }
         </style>
       </head>
       <body>
@@ -150,6 +178,18 @@ serve(async (req) => {
         <div class="disclaimer">
           <strong>Aviso:</strong> A presente proposta não tem força pré-contratual, estando sujeita à aprovação da saúde fiscal do cedente e análise processual.
         </div>
+
+        ${lawyerData ? `
+        <div class="lawyer-info">
+          <h3>Advogado Responsável</h3>
+          ${lawyerData.avatar_url ? `<img src="${lawyerData.avatar_url}" alt="Foto do advogado" class="lawyer-avatar" />` : ''}
+          <div class="lawyer-details">
+            <p><strong>Nome:</strong> ${lawyerData.first_name} ${lawyerData.last_name}</p>
+            <p><strong>Email:</strong> ${lawyerEmail}</p>
+            ${lawyerPhone ? `<p><strong>WhatsApp:</strong> ${lawyerPhone}</p>` : ''}
+          </div>
+        </div>
+        ` : ''}
 
         <div class="footer">
           <p><strong>Empresa:</strong> ${companyName} ${companyCnpj ? `- CNPJ: ${companyCnpj}` : ''}</p>
