@@ -1,23 +1,27 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Save } from "lucide-react";
+import { User, Save, Camera, Upload } from "lucide-react";
 import { profileUpdateSchema } from "@/lib/validation";
 
 export function ProfileSettings() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState({
     first_name: "",
     last_name: "",
     email: "",
-    company_id: ""
+    company_id: "",
+    avatar_url: ""
   });
 
   useEffect(() => {
@@ -42,7 +46,8 @@ export function ProfileSettings() {
         first_name: data.first_name || "",
         last_name: data.last_name || "",
         email: user.email || "",
-        company_id: data.company_id || ""
+        company_id: data.company_id || "",
+        avatar_url: data.avatar_url || ""
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -51,6 +56,96 @@ export function ProfileSettings() {
         description: "Não foi possível carregar os dados do perfil.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "A foto deve ter no máximo 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Tipo de arquivo inválido",
+        description: "Por favor, selecione uma imagem válida.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setAvatarLoading(true);
+
+      // Create file path
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Delete old avatar if exists
+      if (profile.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('avatars')
+            .remove([`${user.id}/${oldPath}`]);
+        }
+      }
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
+
+      // Log the avatar update
+      await supabase.rpc('create_audit_log', {
+        p_action_type: 'AVATAR_UPDATE',
+        p_table_name: 'profiles',
+        p_new_data: { avatar_url: publicUrl }
+      });
+
+      toast({
+        title: "Foto atualizada",
+        description: "Sua foto de perfil foi atualizada com sucesso.",
+      });
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Erro ao enviar foto",
+        description: "Não foi possível atualizar sua foto de perfil.",
+        variant: "destructive",
+      });
+    } finally {
+      setAvatarLoading(false);
     }
   };
 
@@ -114,7 +209,54 @@ export function ProfileSettings() {
           Atualize suas informações pessoais
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
+        {/* Avatar Section */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <Avatar className="w-24 h-24">
+              <AvatarImage src={profile.avatar_url} alt="Foto do perfil" />
+              <AvatarFallback className="text-lg">
+                {profile.first_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarLoading}
+            >
+              {avatarLoading ? (
+                <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Camera className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          <div className="text-center">
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarLoading}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              {avatarLoading ? "Enviando..." : "Alterar Foto"}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Máximo 5MB - JPG, PNG ou GIF
+            </p>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
+        </div>
+
+        {/* Profile Form */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName">Nome</Label>
