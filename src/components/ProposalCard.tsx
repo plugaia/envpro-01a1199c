@@ -5,6 +5,7 @@ import { Mail, MessageCircle, Eye, MoreHorizontal, Calendar, DollarSign, Share, 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Proposal {
   id: string;
@@ -72,15 +73,61 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: 
     });
   };
 
-  const handleDownloadPDF = () => {
-    // Simular download do PDF
-    toast({
-      title: "Download iniciado",
-      description: `PDF da proposta de ${proposal.clientName} será baixado em breve.`,
-    });
-    
-    // Aqui seria implementada a geração do PDF
-    console.log('Downloading PDF for proposal:', proposal.id);
+  const handleSendEmail = async (proposal: Proposal) => {
+    try {
+      const response = await supabase.functions.invoke('send-proposal-email', {
+        body: { proposalId: proposal.id }
+      });
+
+      if (response.error) throw response.error;
+
+      toast({
+        title: "Email enviado!",
+        description: `Proposta enviada para ${proposal.clientEmail}`,
+      });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Erro ao enviar email",
+        description: "Não foi possível enviar o email. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadPDF = async (proposal: Proposal) => {
+    try {
+      const response = await supabase.functions.invoke('generate-proposal-pdf', {
+        body: { proposalId: proposal.id }
+      });
+
+      if (response.error) throw response.error;
+
+      const { data } = response;
+      
+      // Create a blob from the HTML and trigger download
+      const blob = new Blob([data.htmlContent], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.fileName || `proposta-${proposal.id}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "PDF preparado",
+        description: "Arquivo HTML baixado. Use o navegador para salvar como PDF.",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Erro ao gerar PDF",
+        description: "Não foi possível gerar o PDF. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -149,7 +196,7 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: 
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onSendEmail(proposal)}
+              onClick={() => handleSendEmail(proposal)}
               className="flex items-center gap-1"
             >
               <Mail className="w-3 h-3" />
@@ -176,7 +223,7 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: 
             <Button
               size="sm"
               variant="outline"
-              onClick={handleDownloadPDF}
+              onClick={() => handleDownloadPDF(proposal)}
               className="flex items-center gap-1"
             >
               <Download className="w-3 h-3" />

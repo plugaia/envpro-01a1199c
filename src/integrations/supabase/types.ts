@@ -88,6 +88,71 @@ export type Database = {
           },
         ]
       }
+      proposals: {
+        Row: {
+          assignee: string | null
+          cedible_value: number
+          client_email: string
+          client_name: string
+          client_phone: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          organization_name: string | null
+          process_number: string | null
+          proposal_value: number
+          receiver_type: string
+          status: string
+          updated_at: string
+          valid_until: string
+        }
+        Insert: {
+          assignee?: string | null
+          cedible_value: number
+          client_email: string
+          client_name: string
+          client_phone: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          organization_name?: string | null
+          process_number?: string | null
+          proposal_value: number
+          receiver_type: string
+          status?: string
+          updated_at?: string
+          valid_until: string
+        }
+        Update: {
+          assignee?: string | null
+          cedible_value?: number
+          client_email?: string
+          client_name?: string
+          client_phone?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          organization_name?: string | null
+          process_number?: string | null
+          proposal_value?: number
+          receiver_type?: string
+          status?: string
+          updated_at?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

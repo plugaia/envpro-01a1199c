@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,30 +6,106 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Check, X, FileText, Calendar, DollarSign, Building } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock proposal data - In a real app, this would come from an API
-const mockProposal = {
-  id: "prop-123",
-  clientName: "KETLLEN SAMARA RODRIGUES LEMOS ROMANINI",
-  processNumber: "0843335-72.2013.8.12.0001",
-  organizationName: "INSS",
-  cedibleValue: 71507.00,
-  proposalValue: 39329.00,
-  receiverType: "precatorio" as const,
-  status: "pendente" as const,
-  createdAt: new Date("2025-06-03T19:55:00"),
-  validUntil: new Date("2025-07-03T23:59:59"),
-  description: "Proposta de antecipação de crédito judicial para processo trabalhista. Seu futuro está nas suas mãos! Antecipe seus créditos judiciais e abra caminho para novas possibilidades.",
-};
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { PhoneVerificationModal } from "@/components/PhoneVerificationModal";
 
 const ProposalView = () => {
   const { proposalId } = useParams();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [proposal, setProposal] = useState<any>(null);
   const [status, setStatus] = useState<'pendente' | 'aprovada' | 'rejeitada'>('pendente');
+  const [loading, setLoading] = useState(true);
+  const [isVerified, setIsVerified] = useState(!!user); // Authenticated users skip verification
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
   
-  // In a real app, you'd fetch the proposal by ID
-  if (!proposalId || proposalId !== mockProposal.id) {
+  useEffect(() => {
+    if (proposalId) {
+      fetchProposal();
+    }
+  }, [proposalId]);
+
+  const fetchProposal = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('proposals')
+        .select('*, companies(name)')
+        .eq('id', proposalId)
+        .single();
+
+      if (error) throw error;
+      
+      setProposal(data);
+      setStatus(data.status as 'pendente' | 'aprovada' | 'rejeitada');
+      
+      // If user is not authenticated, show verification modal
+      if (!user) {
+        setShowVerification(true);
+      }
+    } catch (error) {
+      console.error('Error fetching proposal:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar a proposta.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhoneVerification = (digits: string) => {
+    if (proposal && proposal.client_phone.slice(-4) === digits) {
+      setIsVerified(true);
+      setShowVerification(false);
+      setVerificationError("");
+    } else {
+      setVerificationError("Dígitos incorretos. Tente novamente.");
+    }
+  };
+  
+  if (!proposalId) {
     return <Navigate to="/404" replace />;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!proposal) {
+    return <Navigate to="/404" replace />;
+  }
+
+  // Show verification modal for non-authenticated users
+  if (!user && !isVerified) {
+    return (
+      <>
+        <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center">
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="p-6 text-center">
+              <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Proposta Protegida</h2>
+              <p className="text-muted-foreground">
+                Esta proposta requer verificação para garantir sua segurança.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        <PhoneVerificationModal
+          isOpen={showVerification}
+          clientPhone={proposal.client_phone}
+          onVerify={handlePhoneVerification}
+          onClose={() => setShowVerification(false)}
+          error={verificationError}
+        />
+      </>
+    );
   }
 
   const formatCurrency = (value: number) => {
@@ -39,30 +115,81 @@ const ProposalView = () => {
     }).format(value);
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: string | Date) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: '2-digit', 
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date);
+    }).format(dateObj);
   };
 
-  const handleAccept = () => {
-    setStatus('aprovada');
-    toast({
-      title: "Proposta Aprovada!",
-      description: "Sua proposta foi aprovada com sucesso. Em breve entraremos em contato.",
-    });
+  const handleAccept = async () => {
+    if (!user) {
+      // Update status locally for non-authenticated users
+      setStatus('aprovada');
+      toast({
+        title: "Proposta Aprovada!",
+        description: "Sua proposta foi aprovada com sucesso. Em breve entraremos em contato.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('proposals')
+        .update({ status: 'aprovada' })
+        .eq('id', proposalId);
+
+      if (error) throw error;
+
+      setStatus('aprovada');
+      toast({
+        title: "Proposta Aprovada!",
+        description: "Sua proposta foi aprovada com sucesso. Em breve entraremos em contato.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a proposta.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleReject = () => {
-    setStatus('rejeitada');
-    toast({
-      title: "Proposta Rejeitada",
-      description: "Sua resposta foi registrada. Obrigado pelo seu tempo.",
-    });
+  const handleReject = async () => {
+    if (!user) {
+      // Update status locally for non-authenticated users
+      setStatus('rejeitada');
+      toast({
+        title: "Proposta Rejeitada",
+        description: "Sua resposta foi registrada. Obrigado pelo seu tempo.",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('proposals')
+        .update({ status: 'rejeitada' })
+        .eq('id', proposalId);
+
+      if (error) throw error;
+
+      setStatus('rejeitada');
+      toast({
+        title: "Proposta Rejeitada",
+        description: "Sua resposta foi registrada. Obrigado pelo seu tempo.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a proposta.",
+        variant: "destructive",
+      });
+    }
   };
 
   const statusConfig = {
@@ -80,7 +207,7 @@ const ProposalView = () => {
             Proposta de Antecipação
           </h1>
           <p className="text-xl opacity-90 max-w-2xl mx-auto">
-            {mockProposal.description}
+            {proposal.description || "Seu futuro está nas suas mãos! Antecipe seus créditos judiciais e abra caminho para novas possibilidades."}
           </p>
         </div>
       </div>
@@ -93,7 +220,7 @@ const ProposalView = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Cara(o) Sr(a).</p>
                 <h2 className="text-2xl font-bold text-foreground">
-                  {mockProposal.clientName}
+                  {proposal.client_name}
                 </h2>
               </div>
               <Badge className={statusConfig[status].color}>
@@ -108,6 +235,7 @@ const ProposalView = () => {
             </p>
 
             {/* Process Details */}
+            {(proposal.process_number || proposal.organization_name) && (
             <div className="bg-card border border-border rounded-lg p-6 mb-6">
               <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
@@ -115,31 +243,36 @@ const ProposalView = () => {
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {proposal.process_number && (
                 <div className="text-center">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <FileText className="w-6 h-6 text-primary" />
                   </div>
                   <p className="font-semibold text-sm mb-1">Número do processo</p>
-                  <p className="text-sm text-muted-foreground">{mockProposal.processNumber}</p>
+                  <p className="text-sm text-muted-foreground">{proposal.process_number}</p>
                 </div>
+                )}
                 
+                {proposal.organization_name && (
                 <div className="text-center">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <Building className="w-6 h-6 text-primary" />
                   </div>
                   <p className="font-semibold text-sm mb-1">Nome do Órgão/Devedor</p>
-                  <p className="text-sm text-muted-foreground">{mockProposal.organizationName}</p>
+                  <p className="text-sm text-muted-foreground">{proposal.organization_name}</p>
                 </div>
+                )}
                 
                 <div className="text-center">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <DollarSign className="w-6 h-6 text-primary" />
                   </div>
                   <p className="font-semibold text-sm mb-1">Valor Cedível</p>
-                  <p className="text-lg font-bold text-primary">{formatCurrency(mockProposal.cedibleValue)}</p>
+                  <p className="text-lg font-bold text-primary">{formatCurrency(proposal.cedible_value)}</p>
                 </div>
               </div>
             </div>
+            )}
 
             {/* Proposal Approved */}
             <div className="flex items-center justify-between bg-muted rounded-lg p-6 mb-6">
@@ -149,12 +282,12 @@ const ProposalView = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-xl mb-1">Proposta Aprovada</h3>
-                  <p className="text-sm text-muted-foreground">Pagamento garantido pelo Wone Bank</p>
+                  <p className="text-sm text-muted-foreground">Pagamento garantido pelo {proposal.companies?.name || 'Banco'}</p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-3xl font-bold text-primary">
-                  {formatCurrency(mockProposal.proposalValue)}
+                  {formatCurrency(proposal.proposal_value)}
                 </p>
               </div>
             </div>
@@ -212,9 +345,9 @@ const ProposalView = () => {
         <div className="text-center text-sm text-muted-foreground">
           <p className="flex items-center justify-center gap-2 mb-2">
             <Calendar className="w-4 h-4" />
-            Válida até: {formatDate(mockProposal.validUntil)}
+            Válida até: {formatDate(proposal.valid_until)}
           </p>
-          <p>© 2025 LegalProp - Plataforma de Propostas Jurídicas</p>
+          <p>© 2025 {proposal.companies?.name || 'LegalProp'} - Plataforma de Propostas Jurídicas</p>
         </div>
       </div>
     </div>
