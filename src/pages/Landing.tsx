@@ -10,8 +10,8 @@ const Landing = () => {
       <header className="border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Building2 className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">LegalProp</h1>
+            <img src="/lovable-uploads/301c97ce-b36d-4b78-9785-16511b858982.png" alt="EnvPRO" className="h-8 w-auto" />
+            <h1 className="text-2xl font-bold text-foreground">EnvPRO</h1>
           </div>
           <Link to="/auth">
             <Button variant="outline">Entrar</Button>
@@ -77,7 +77,7 @@ const Landing = () => {
         {/* Benefits */}
         <div className="text-center mb-16">
           <h3 className="text-3xl font-bold text-foreground mb-8">
-            Por que escolher o LegalProp?
+            Por que escolher o EnvPRO?
           </h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="flex items-center gap-3 p-4 rounded-lg bg-card">
@@ -121,7 +121,7 @@ const Landing = () => {
       {/* Footer */}
       <footer className="border-t border-border bg-card/50 py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>&copy; 2025 LegalProp. Todos os direitos reservados.</p>
+          <p>&copy; 2025 EnvPRO. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>
