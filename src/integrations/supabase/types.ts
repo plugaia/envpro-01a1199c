@@ -313,6 +313,39 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          action_type: string
+          attempts: number
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          updated_at: string
+          user_id: string | null
+          window_start: string
+        }
+        Insert: {
+          action_type: string
+          attempts?: number
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          updated_at?: string
+          user_id?: string | null
+          window_start?: string
+        }
+        Update: {
+          action_type?: string
+          attempts?: number
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          updated_at?: string
+          user_id?: string | null
+          window_start?: string
+        }
+        Relationships: []
+      }
       team_invitations: {
         Row: {
           company_id: string
@@ -373,6 +406,18 @@ export type Database = {
     Functions: {
       accept_team_invitation: {
         Args: { p_invitation_token: string; p_user_id: string }
+        Returns: boolean
+      }
+      audit_sensitive_operation: {
+        Args: { p_details?: Json; p_operation_type: string }
+        Returns: string
+      }
+      check_rate_limit: {
+        Args: {
+          p_action_type: string
+          p_max_attempts?: number
+          p_window_minutes?: number
+        }
         Returns: boolean
       }
       create_audit_log: {
@@ -509,6 +554,10 @@ export type Database = {
       }
       mark_notification_read: {
         Args: { notification_id: string }
+        Returns: boolean
+      }
+      validate_password_strength: {
+        Args: { password_input: string }
         Returns: boolean
       }
       verify_phone_digits: {
