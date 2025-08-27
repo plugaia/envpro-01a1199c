@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Bell, User, Plus } from "lucide-react";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { Bell, User, Plus, Menu, X } from "lucide-react";
 import { ProfilePopover } from "./ProfilePopover";
 import { NotificationsPopover } from "./NotificationsPopover";
 
@@ -9,10 +9,14 @@ interface HeaderProps {
 }
 
 export function Header({ onNewProposal }: HeaderProps) {
+  const { open } = useSidebar();
+  
   return (
     <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
-        <SidebarTrigger className="lg:hidden" />
+        <SidebarTrigger className="p-2 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+          {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        </SidebarTrigger>
         <div>
           <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Gerencie suas propostas jurídicas</p>
