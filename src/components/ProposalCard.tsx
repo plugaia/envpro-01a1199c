@@ -1,9 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Mail, MessageCircle, Eye, MoreHorizontal, Calendar, DollarSign } from "lucide-react";
+import { Mail, MessageCircle, Eye, MoreHorizontal, Calendar, DollarSign, Share } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Proposal {
   id: string;
@@ -46,11 +47,29 @@ const receiverTypeLabels = {
 };
 
 export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: ProposalCardProps) {
+  const { toast } = useToast();
+  
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  const handleShareLink = () => {
+    const shareUrl = `${window.location.origin}/proposta/${proposal.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      toast({
+        title: "Link copiado!",
+        description: "O link da proposta foi copiado para a área de transferência.",
+      });
+    }).catch(() => {
+      toast({
+        title: "Erro ao copiar",
+        description: "Não foi possível copiar o link. Tente novamente.",
+        variant: "destructive",
+      });
+    });
   };
 
   return (
@@ -133,6 +152,15 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: 
             >
               <MessageCircle className="w-3 h-3" />
               WhatsApp
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleShareLink}
+              className="flex items-center gap-1"
+            >
+              <Share className="w-3 h-3" />
+              Link
             </Button>
           </div>
           <Button

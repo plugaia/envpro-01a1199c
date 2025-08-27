@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mail, MessageCircle, Eye, Calendar, DollarSign, FileText } from "lucide-react";
+import { Mail, MessageCircle, Eye, Calendar, DollarSign, FileText, Share } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Proposal } from "@/components/ProposalCard";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProposalListProps {
   proposals: Proposal[];
@@ -33,6 +34,8 @@ const receiverTypeLabels = {
 };
 
 export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }: ProposalListProps) {
+  const { toast } = useToast();
+  
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -42,6 +45,22 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
 
   const formatDate = (date: Date) => {
     return format(date, "dd/MM/yy", { locale: ptBR });
+  };
+
+  const handleShareLink = (proposal: Proposal) => {
+    const shareUrl = `${window.location.origin}/proposta/${proposal.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      toast({
+        title: "Link copiado!",
+        description: "O link da proposta foi copiado para a área de transferência.",
+      });
+    }).catch(() => {
+      toast({
+        title: "Erro ao copiar",
+        description: "Não foi possível copiar o link. Tente novamente.",
+        variant: "destructive",
+      });
+    });
   };
 
   if (proposals.length === 0) {
@@ -77,7 +96,7 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
                 <TableHead className="w-[120px] text-right">Proposta</TableHead>
                 <TableHead className="w-[80px]">Data</TableHead>
                 <TableHead className="w-[100px]">Responsável</TableHead>
-                <TableHead className="w-[140px] text-center">Ações</TableHead>
+                <TableHead className="w-[160px] text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -171,6 +190,15 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
                         title="Enviar por WhatsApp"
                       >
                         <MessageCircle className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleShareLink(proposal)}
+                        className="h-7 w-7 p-0"
+                        title="Compartilhar Link"
+                      >
+                        <Share className="w-3 h-3" />
                       </Button>
                       <Button
                         size="sm"
