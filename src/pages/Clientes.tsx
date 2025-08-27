@@ -240,34 +240,38 @@ const Clientes = () => {
                   </CardContent>
                 </Card>
                 
-                <Card>
-                  <CardContent className="p-4">
+                <Card className="card-elegant">
+                  <CardContent className="p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Novos este mês</p>
-                        <p className="text-2xl font-bold text-success">3</p>
+                        <p className="text-3xl font-bold text-success">3</p>
                       </div>
-                      <Plus className="w-8 h-8 text-success/60" />
+                      <div className="p-3 rounded-full bg-success/10">
+                        <Plus className="w-8 h-8 text-success" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
                 
-                <Card>
-                  <CardContent className="p-4">
+                <Card className="card-elegant">
+                  <CardContent className="p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Com WhatsApp</p>
-                        <p className="text-2xl font-bold text-warning">{clients.length}</p>
+                        <p className="text-3xl font-bold text-warning">{clients.length}</p>
                       </div>
-                      <Users className="w-8 h-8 text-warning/60" />
+                      <div className="p-3 rounded-full bg-warning/10">
+                        <Users className="w-8 h-8 text-warning" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Search */}
-              <Card>
-                <CardContent className="p-4">
+              <Card className="card-elegant">
+                <CardContent className="p-6">
                   <div className="flex items-center gap-4">
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -286,17 +290,17 @@ const Clientes = () => {
               </Card>
 
               {/* Clients Table */}
-              <Card>
+              <Card className="card-elegant">
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/50">
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>WhatsApp</TableHead>
-                          <TableHead>Data de Cadastro</TableHead>
-                          <TableHead className="text-center">Ações</TableHead>
+                          <TableHead className="font-semibold">Nome</TableHead>
+                          <TableHead className="font-semibold">Email</TableHead>
+                          <TableHead className="font-semibold">WhatsApp</TableHead>
+                          <TableHead className="font-semibold">Data de Cadastro</TableHead>
+                          <TableHead className="text-center font-semibold">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -307,16 +311,16 @@ const Clientes = () => {
                                 {client.firstName} {client.lastName}
                               </div>
                             </TableCell>
-                            <TableCell>{client.email}</TableCell>
-                            <TableCell>{client.whatsapp}</TableCell>
-                            <TableCell>{formatDate(client.createdAt)}</TableCell>
+                            <TableCell className="text-muted-foreground">{client.email}</TableCell>
+                            <TableCell className="text-muted-foreground">{client.whatsapp}</TableCell>
+                            <TableCell className="text-muted-foreground">{formatDate(client.createdAt)}</TableCell>
                             <TableCell>
                               <div className="flex items-center justify-center gap-2">
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleEditClient(client)}
-                                  className="h-8 w-8 p-0"
+                                  className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
                                   title="Editar"
                                 >
                                   <Edit className="w-4 h-4" />
@@ -325,7 +329,7 @@ const Clientes = () => {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleDeleteClient(client.id)}
-                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                                   title="Excluir"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -341,9 +345,9 @@ const Clientes = () => {
               </Card>
 
               {filteredClients.length === 0 && (
-                <Card>
+                <Card className="card-elegant">
                   <CardContent className="text-center py-12">
-                    <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
                     <h3 className="text-lg font-semibold mb-2">Nenhum cliente encontrado</h3>
                     <p className="text-muted-foreground mb-4">
                       {searchTerm ? "Ajuste sua busca ou" : ""} adicione um novo cliente para começar.

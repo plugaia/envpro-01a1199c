@@ -241,50 +241,56 @@ const Relatorios = () => {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardContent className="p-4">
+                <Card className="card-elegant">
+                  <CardContent className="p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Taxa de Aprovação</p>
-                        <p className="text-2xl font-bold text-success">{formatPercentage(stats.conversionRate)}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <TrendingUp className="w-3 h-3 text-success" />
-                          <span className="text-xs text-success">+3.2% vs mês anterior</span>
+                        <p className="text-3xl font-bold text-success">{formatPercentage(stats.conversionRate)}</p>
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="w-4 h-4 text-success" />
+                          <span className="text-sm text-success">+3.2% vs mês anterior</span>
                         </div>
                       </div>
-                      <CheckCircle className="w-8 h-8 text-success/60" />
+                      <div className="p-3 rounded-full bg-success/10">
+                        <CheckCircle className="w-8 h-8 text-success" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardContent className="p-4">
+                <Card className="card-elegant">
+                  <CardContent className="p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Valor Total</p>
-                        <p className="text-2xl font-bold text-primary">{formatCurrency(stats.totalValue)}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <TrendingUp className="w-3 h-3 text-success" />
-                          <span className="text-xs text-success">+18% vs mês anterior</span>
+                        <p className="text-3xl font-bold text-primary">{formatCurrency(stats.totalValue)}</p>
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="w-4 h-4 text-success" />
+                          <span className="text-sm text-success">+18% vs mês anterior</span>
                         </div>
                       </div>
-                      <DollarSign className="w-8 h-8 text-primary/60" />
+                      <div className="p-3 rounded-full bg-primary/10">
+                        <DollarSign className="w-8 h-8 text-primary" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardContent className="p-4">
+                <Card className="card-elegant">
+                  <CardContent className="p-6">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">Valor Médio</p>
-                        <p className="text-2xl font-bold text-warning">{formatCurrency(stats.avgValue)}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <TrendingDown className="w-3 h-3 text-destructive" />
-                          <span className="text-xs text-destructive">-2.1% vs mês anterior</span>
+                        <p className="text-3xl font-bold text-warning">{formatCurrency(stats.avgValue)}</p>
+                        <div className="flex items-center gap-1">
+                          <TrendingDown className="w-4 h-4 text-destructive" />
+                          <span className="text-sm text-destructive">-2.1% vs mês anterior</span>
                         </div>
                       </div>
-                      <BarChart3 className="w-8 h-8 text-warning/60" />
+                      <div className="p-3 rounded-full bg-warning/10">
+                        <BarChart3 className="w-8 h-8 text-warning" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
