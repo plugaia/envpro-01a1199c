@@ -57,17 +57,15 @@ const Clientes = () => {
     try {
       setLoading(true);
       
-      // Fetch unique clients from proposals
+      // Fetch clients using secure function with role-based access
       const { data: proposals, error } = await supabase
-        .from('proposals')
-        .select('client_name, client_email, client_phone, created_at')
-        .order('created_at', { ascending: false });
+        .rpc('get_user_proposals');
 
       if (error) throw error;
 
-      // Create unique clients list
+      // Create unique clients list - only use data user has permission to see
       const uniqueClients = new Map();
-      proposals?.forEach(proposal => {
+      proposals?.forEach((proposal: any) => {
         const key = proposal.client_email;
         if (!uniqueClients.has(key)) {
           const [firstName, ...lastNameParts] = proposal.client_name.split(' ');

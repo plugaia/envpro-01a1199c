@@ -44,18 +44,20 @@ const Relatorios = () => {
       const startDate = new Date();
       startDate.setDate(today.getDate() - parseInt(selectedPeriod));
 
-      // Fetch proposals for the selected period
+      // Fetch proposals using secure function with role-based access
       const { data: proposals, error } = await supabase
-        .from('proposals')
-        .select('*')
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: false });
+        .rpc('get_user_proposals');
 
       if (error) throw error;
 
-      // Calculate basic stats
-      const totalProposals = proposals?.length || 0;
-      const approvedProposals = proposals?.filter(p => p.status === 'aprovada').length || 0;
+      // Filter by date range and calculate basic stats  
+      const filteredProposals = proposals?.filter((p: any) => {
+        const proposalDate = new Date(p.created_at);
+        return proposalDate >= startDate;
+      }) || [];
+
+      const totalProposals = filteredProposals.length;
+      const approvedProposals = filteredProposals.filter((p: any) => p.status === 'aprovada').length;
       const pendingProposals = proposals?.filter(p => p.status === 'pendente').length || 0;
       const rejectedProposals = proposals?.filter(p => p.status === 'rejeitada').length || 0;
       

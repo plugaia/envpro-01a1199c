@@ -58,15 +58,38 @@ const ProposalView = () => {
           throw new Error('Token inválido ou expirado');
         }
       } else if (user) {
-        // Authenticated user access
-        const response = await supabase
-          .from('proposals')
-          .select('*, companies(name)')
-          .eq('id', proposalId)
-          .single();
+        // Authenticated user access - use secure function with role-based access
+        const { data: secureData, error: secureError } = await supabase
+          .rpc('get_proposal_by_id', { p_proposal_id: proposalId });
           
-        data = response.data;
-        error = response.error;
+        if (secureError) throw secureError;
+        
+        if (secureData && secureData.length > 0) {
+          const proposalData = secureData[0];
+          data = {
+            id: proposalData.id,
+            client_name: proposalData.client_name,
+            client_email: proposalData.client_email, // Will be masked for non-admins
+            client_phone: proposalData.client_phone, // Will be masked for non-admins
+            process_number: proposalData.process_number,
+            organization_name: proposalData.organization_name,
+            cedible_value: proposalData.cedible_value,
+            proposal_value: proposalData.proposal_value,
+            valid_until: proposalData.valid_until,
+            receiver_type: proposalData.receiver_type,
+            status: proposalData.status,
+            description: proposalData.description,
+            assignee: proposalData.assignee,
+            created_by: proposalData.created_by,
+            company_id: proposalData.company_id,
+            created_at: proposalData.created_at,
+            updated_at: proposalData.updated_at,
+            can_view_client_details: proposalData.can_view_client_details,
+            companies: { name: 'Empresa' } // Company name not needed in this view
+          };
+        } else {
+          throw new Error('Proposta não encontrada ou sem permissão de acesso');
+        }
       } else {
         throw new Error('Acesso não autorizado');
       }
@@ -92,7 +115,8 @@ const ProposalView = () => {
   };
 
   const handlePhoneVerification = (digits: string) => {
-    if (proposal && proposal.client_phone.slice(-4) === digits) {
+    // Only verify if client phone is available (not masked)
+    if (proposal && proposal.client_phone && proposal.client_phone !== '(***) ****-****' && proposal.client_phone.slice(-4) === digits) {
       setIsVerified(true);
       setShowVerification(false);
       setVerificationError("");
@@ -132,13 +156,15 @@ const ProposalView = () => {
             </CardContent>
           </Card>
         </div>
-        <PhoneVerificationModal
-          isOpen={showVerification}
-          clientPhone={proposal.client_phone}
-          onVerify={handlePhoneVerification}
-          onClose={() => setShowVerification(false)}
-          error={verificationError}
-        />
+        {proposal?.client_phone && proposal.client_phone !== '(***) ****-****' && (
+          <PhoneVerificationModal
+            isOpen={showVerification}
+            clientPhone={proposal.client_phone}
+            onVerify={handlePhoneVerification}
+            onClose={() => setShowVerification(false)}
+            error={verificationError}
+          />
+        )}
       </>
     );
   }
