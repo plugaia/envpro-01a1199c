@@ -6,27 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, ArrowLeft, Building2, Mail, Lock, User, Phone, FileText } from 'lucide-react';
+import { Loader2, ArrowLeft, Building2, Mail, Lock } from 'lucide-react';
+import { StepForm, RegisterFormData } from '@/components/StepForm';
+import { EmailVerificationModal } from '@/components/EmailVerificationModal';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { signIn, signUp, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const [loginForm, setLoginForm] = useState({
     email: '',
     password: '',
-  });
-
-  const [registerForm, setRegisterForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    companyName: '',
-    cnpj: '',
-    responsiblePhone: '',
   });
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -42,28 +35,27 @@ const Auth = () => {
     setIsLoading(false);
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (registerForm.password !== registerForm.confirmPassword) {
+  const handleRegister = async (data: RegisterFormData) => {
+    if (data.password !== data.confirmPassword) {
       return;
     }
 
     setIsLoading(true);
 
-    const { error } = await signUp(registerForm.email, registerForm.password, {
-      firstName: registerForm.firstName,
-      lastName: registerForm.lastName,
-      companyName: registerForm.companyName,
-      cnpj: registerForm.cnpj,
-      responsiblePhone: registerForm.responsiblePhone,
+    const { error } = await signUp(data.email, data.password, {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      companyName: data.companyName,
+      cnpj: data.cnpj,
+      responsiblePhone: data.responsiblePhone,
     });
     
-    if (!error) {
-      navigate('/');
-    }
-    
     setIsLoading(false);
+
+    if (!error) {
+      setRegisteredEmail(data.email);
+      setShowEmailVerification(true);
+    }
   };
 
   if (loading) {
@@ -158,144 +150,17 @@ const Auth = () => {
               </TabsContent>
 
               <TabsContent value="register" className="space-y-4">
-                <div className="text-center mb-4">
-                  <CardTitle className="text-xl text-foreground">Criar Nova Conta</CardTitle>
-                  <CardDescription>
-                    Cadastre sua empresa e comece a usar nossa plataforma
-                  </CardDescription>
-                </div>
-
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName" className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Nome
-                      </Label>
-                      <Input
-                        id="firstName"
-                        placeholder="Seu nome"
-                        value={registerForm.firstName}
-                        onChange={(e) => setRegisterForm(prev => ({ ...prev, firstName: e.target.value }))}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Sobrenome</Label>
-                      <Input
-                        id="lastName"
-                        placeholder="Seu sobrenome"
-                        value={registerForm.lastName}
-                        onChange={(e) => setRegisterForm(prev => ({ ...prev, lastName: e.target.value }))}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName" className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      Nome da Empresa
-                    </Label>
-                    <Input
-                      id="companyName"
-                      placeholder="Nome da sua empresa"
-                      value={registerForm.companyName}
-                      onChange={(e) => setRegisterForm(prev => ({ ...prev, companyName: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cnpj" className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      CNPJ
-                    </Label>
-                    <Input
-                      id="cnpj"
-                      placeholder="00.000.000/0000-00"
-                      value={registerForm.cnpj}
-                      onChange={(e) => setRegisterForm(prev => ({ ...prev, cnpj: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="responsiblePhone" className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      Telefone do Responsável
-                    </Label>
-                    <Input
-                      id="responsiblePhone"
-                      placeholder="(00) 00000-0000"
-                      value={registerForm.responsiblePhone}
-                      onChange={(e) => setRegisterForm(prev => ({ ...prev, responsiblePhone: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email" className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      Email
-                    </Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      placeholder="responsavel@empresa.com"
-                      value={registerForm.email}
-                      onChange={(e) => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password" className="flex items-center gap-2">
-                      <Lock className="h-4 w-4" />
-                      Senha
-                    </Label>
-                    <Input
-                      id="register-password"
-                      type="password"
-                      placeholder="Crie uma senha segura"
-                      value={registerForm.password}
-                      onChange={(e) => setRegisterForm(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Confirme sua senha"
-                      value={registerForm.confirmPassword}
-                      onChange={(e) => setRegisterForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading || registerForm.password !== registerForm.confirmPassword}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Criando conta...
-                      </>
-                    ) : (
-                      'Criar Conta'
-                    )}
-                  </Button>
-                </form>
+                <StepForm onSubmit={handleRegister} isLoading={isLoading} />
               </TabsContent>
             </CardContent>
           </Tabs>
         </Card>
+
+        <EmailVerificationModal
+          isOpen={showEmailVerification}
+          onClose={() => setShowEmailVerification(false)}
+          email={registeredEmail}
+        />
       </div>
     </div>
   );
