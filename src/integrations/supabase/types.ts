@@ -55,6 +55,7 @@ export type Database = {
       }
       client_contacts: {
         Row: {
+          client_id: string | null
           created_at: string
           email: string
           id: string
@@ -63,6 +64,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           email: string
           id?: string
@@ -71,6 +73,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -80,6 +83,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "client_contacts_proposal_id_fkey"
             columns: ["proposal_id"]
             isOneToOne: true
@@ -87,6 +97,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clients: {
+        Row: {
+          company_id: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       companies: {
         Row: {
