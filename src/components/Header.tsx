@@ -3,6 +3,7 @@ import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Bell, User, Plus, Menu, X } from "lucide-react";
 import { ProfilePopover } from "./ProfilePopover";
 import { NotificationsPopover } from "./NotificationsPopover";
+import { useAuth } from "@/hooks/useAuth";
 
 interface HeaderProps {
   onNewProposal: () => void;
@@ -10,6 +11,7 @@ interface HeaderProps {
 
 export function Header({ onNewProposal }: HeaderProps) {
   const { open } = useSidebar();
+  const { signOut } = useAuth();
   
   return (
     <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
@@ -38,7 +40,7 @@ export function Header({ onNewProposal }: HeaderProps) {
           </Button>
         </NotificationsPopover>
         
-        <ProfilePopover>
+        <ProfilePopover onSignOut={signOut}>
           <Button variant="ghost" size="sm">
             <User className="w-5 h-5" />
           </Button>

@@ -3,7 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Landing from "./pages/Landing";
 import ProposalView from "./pages/ProposalView";
 import Configuracoes from "./pages/Configuracoes";
 import Clientes from "./pages/Clientes";
@@ -12,23 +16,60 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Component to handle conditional routing based on auth state
+const AppRoutes = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center">Carregando...</div>
+    </div>;
+  }
+
+  return (
+    <Routes>
+      <Route path="/auth" element={!user ? <Auth /> : <Index />} />
+      <Route path="/proposta/:proposalId" element={<ProposalView />} />
+      <Route path="/" element={
+        user ? (
+          <ProtectedRoute>
+            <Index />
+          </ProtectedRoute>
+        ) : (
+          <Landing />
+        )
+      } />
+      <Route path="/configuracoes" element={
+        <ProtectedRoute>
+          <Configuracoes />
+        </ProtectedRoute>
+      } />
+      <Route path="/clientes" element={
+        <ProtectedRoute>
+          <Clientes />
+        </ProtectedRoute>
+      } />
+      <Route path="/relatorios" element={
+        <ProtectedRoute>
+          <Relatorios />
+        </ProtectedRoute>
+      } />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/proposta/:proposalId" element={<ProposalView />} />
-          <Route path="/configuracoes" element={<Configuracoes />} />
-          <Route path="/clientes" element={<Clientes />} />
-          <Route path="/relatorios" element={<Relatorios />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
