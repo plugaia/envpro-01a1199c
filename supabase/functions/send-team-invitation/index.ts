@@ -57,6 +57,13 @@ serve(async (req) => {
       }
     );
 
+    console.log('Creating team invitation with params:', {
+      p_email: email,
+      p_first_name: firstName,
+      p_last_name: lastName,
+      p_whatsapp_number: whatsappNumber
+    });
+
     // Create team invitation using the user's context
     const { data: invitationData, error: invitationError } = await userSupabase
       .rpc('create_team_invitation', {
@@ -66,6 +73,8 @@ serve(async (req) => {
         p_whatsapp_number: whatsappNumber
       });
 
+    console.log('Invitation creation result:', { invitationData, invitationError });
+
     if (invitationError) {
       console.error('Invitation creation error:', invitationError);
       return new Response(
@@ -74,11 +83,20 @@ serve(async (req) => {
       );
     }
 
+    if (!invitationData || invitationData.length === 0) {
+      console.error('No invitation data returned');
+      return new Response(
+        JSON.stringify({ error: 'Failed to create invitation - no data returned' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const invitationToken = invitationData[0]?.invitation_token;
     
     if (!invitationToken) {
+      console.error('No invitation token in data:', invitationData);
       return new Response(
-        JSON.stringify({ error: 'Failed to create invitation' }),
+        JSON.stringify({ error: 'Failed to create invitation - no token generated' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
