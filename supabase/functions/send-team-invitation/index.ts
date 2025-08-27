@@ -23,21 +23,7 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const { email, firstName, lastName, whatsappNumber }: SendInvitationRequest = await req.json();
-
-    if (!email || !firstName || !lastName) {
-      return new Response(
-        JSON.stringify({ error: 'Email, first name, and last name are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get the Authorization header
+    // Get the Authorization header from the request
     const authHeader = req.headers.get('authorization');
     console.log('Auth header received:', authHeader ? 'Present' : 'Missing');
     
@@ -49,8 +35,8 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client with user's JWT
-    const userSupabase = createClient(
+    // Create authenticated Supabase client
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
@@ -60,13 +46,30 @@ serve(async (req) => {
       }
     );
 
-    console.log('Testing user authentication...');
-    const { data: { user: testUser }, error: testUserError } = await userSupabase.auth.getUser();
-    console.log('Test user result:', { 
-      userId: testUser?.id, 
-      email: testUser?.email, 
-      error: testUserError?.message 
+    // Verify user authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('User verification:', { 
+      userId: user?.id, 
+      email: user?.email, 
+      error: userError?.message 
     });
+
+    if (userError || !user) {
+      console.error('Authentication failed:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Authentication failed' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { email, firstName, lastName, whatsappNumber }: SendInvitationRequest = await req.json();
+
+    if (!email || !firstName || !lastName) {
+      return new Response(
+        JSON.stringify({ error: 'Email, first name, and last name are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log('Creating team invitation with params:', {
       p_email: email,
@@ -75,19 +78,16 @@ serve(async (req) => {
       p_whatsapp_number: whatsappNumber
     });
 
-    if (!testUser?.id) {
-      console.error('No valid user found from auth token');
-      return new Response(
-        JSON.stringify({ error: 'Invalid user authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Get user's profile and company using service role for database operations
+    const serviceSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    // Get user's profile and company using service role client
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
       .select('*, companies(*)')
-      .eq('user_id', testUser.id)
+      .eq('user_id', user.id)
       .single();
 
     console.log('Profile fetch result:', { profile: profile?.first_name, error: profileError?.message });
