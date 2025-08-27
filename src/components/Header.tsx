@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell, User, Plus } from "lucide-react";
+import { ProfilePopover } from "./ProfilePopover";
+import { NotificationsPopover } from "./NotificationsPopover";
 
 interface HeaderProps {
   onNewProposal: () => void;
@@ -26,13 +28,17 @@ export function Header({ onNewProposal }: HeaderProps) {
           Nova Proposta
         </Button>
         
-        <Button variant="ghost" size="sm">
-          <Bell className="w-5 h-5" />
-        </Button>
+        <NotificationsPopover>
+          <Button variant="ghost" size="sm">
+            <Bell className="w-5 h-5" />
+          </Button>
+        </NotificationsPopover>
         
-        <Button variant="ghost" size="sm">
-          <User className="w-5 h-5" />
-        </Button>
+        <ProfilePopover>
+          <Button variant="ghost" size="sm">
+            <User className="w-5 h-5" />
+          </Button>
+        </ProfilePopover>
       </div>
     </header>
   );

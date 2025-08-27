@@ -1,9 +1,18 @@
-import { FileText, Plus, BarChart3, Settings, Users, Mail } from "lucide-react";
+import { FileText, Plus, BarChart3, Settings, Users, Mail, Moon, Sun, Monitor } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useTheme } from "@/components/ThemeProvider";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -23,6 +32,7 @@ const items = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
+  const { theme, setTheme } = useTheme();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
@@ -96,6 +106,47 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border">
+        <div className={`${collapsed ? "px-1" : "px-3"} py-3`}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size={collapsed ? "sm" : "default"}
+                className={`${
+                  collapsed 
+                    ? "w-10 h-10 p-0 mx-auto" 
+                    : "w-full justify-start"
+                } hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`}
+              >
+                {theme === "light" ? (
+                  <Sun className="h-4 w-4" />
+                ) : theme === "dark" ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Monitor className="h-4 w-4" />
+                )}
+                {!collapsed && <span className="ml-2">Tema</span>}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" side={collapsed ? "right" : "top"}>
+              <DropdownMenuItem onClick={() => setTheme("light")}>
+                <Sun className="mr-2 h-4 w-4" />
+                Claro
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("dark")}>
+                <Moon className="mr-2 h-4 w-4" />
+                Escuro
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("system")}>
+                <Monitor className="mr-2 h-4 w-4" />
+                Sistema
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
