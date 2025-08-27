@@ -1,4 +1,5 @@
 import { FileText, Plus, BarChart3, Settings, Users, Mail, Moon, Sun, Monitor, ChevronLeft, ChevronRight } from "lucide-react";
+import logoIcon from "@/assets/logo-icon.png";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -53,8 +54,8 @@ export function AppSidebar() {
             <div className="flex items-center gap-2 flex-1">
               {!collapsed && (
                 <>
-                  <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-sidebar-primary-foreground" />
+                  <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center overflow-hidden">
+                    <img src={logoIcon} alt="EnvPRO" className="w-6 h-6 object-contain rounded" />
                   </div>
                   <div>
                     <h2 className="font-bold text-lg text-sidebar-foreground">EnvPRO</h2>
@@ -63,8 +64,8 @@ export function AppSidebar() {
                 </>
               )}
               {collapsed && (
-                <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center mx-auto">
-                  <Mail className="w-5 h-5 text-sidebar-primary-foreground" />
+                <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center mx-auto overflow-hidden">
+                  <img src={logoIcon} alt="EnvPRO" className="w-6 h-6 object-contain rounded" />
                 </div>
               )}
             </div>
