@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { Layout } from "@/components/Layout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Landing from "./pages/Landing";
@@ -35,7 +36,9 @@ const AppRoutes = () => {
       <Route path="/" element={
         user ? (
           <ProtectedRoute>
-            <Index />
+            <Layout>
+              <Index />
+            </Layout>
           </ProtectedRoute>
         ) : (
           <Landing />
@@ -43,17 +46,23 @@ const AppRoutes = () => {
       } />
       <Route path="/configuracoes" element={
         <ProtectedRoute>
-          <Configuracoes />
+          <Layout>
+            <Configuracoes />
+          </Layout>
         </ProtectedRoute>
       } />
       <Route path="/clientes" element={
         <ProtectedRoute>
-          <Clientes />
+          <Layout>
+            <Clientes />
+          </Layout>
         </ProtectedRoute>
       } />
       <Route path="/relatorios" element={
         <ProtectedRoute>
-          <Relatorios />
+          <Layout>
+            <Relatorios />
+          </Layout>
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />

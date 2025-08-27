@@ -1,9 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-import { Header } from "@/components/Header";
 import { type Proposal } from "@/components/ProposalCard";
-import { ProposalForm } from "@/components/ProposalForm";
 import { ProposalFilters, type FilterOptions } from "@/components/ProposalFilters";
 import { ProposalList } from "@/components/ProposalList";
 import { ProposalEditModal } from "@/components/ProposalEditModal";
@@ -16,7 +12,6 @@ const Index = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [showProposalForm, setShowProposalForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
   const [deletingProposal, setDeletingProposal] = useState<Proposal | null>(null);
@@ -79,10 +74,6 @@ const Index = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleNewProposal = () => {
-    setShowProposalForm(true);
   };
 
   const handleSubmitProposal = async () => {
@@ -340,80 +331,61 @@ Equipe EnvPRO 📋⚖️`
   }, [proposals, filters]);
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          <Header onNewProposal={handleNewProposal} />
-          
-          <main className="flex-1 p-4 md:p-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="mb-4 md:mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">
-                  Propostas Jurídicas
-                </h2>
-                <p className="text-sm md:text-base text-muted-foreground">
-                  Gerencie e envie suas propostas para clientes via email ou WhatsApp
-                </p>
-              </div>
-
-              {/* Filters */}
-              <ProposalFilters
-                filters={filters}
-                onFiltersChange={setFilters}
-                totalCount={proposals.length}
-                filteredCount={filteredProposals.length}
-              />
-
-              {/* Proposals List */}
-              {loading ? (
-                <div className="flex items-center justify-center p-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                <ProposalList
-                  proposals={filteredProposals}
-                  onSendEmail={handleSendEmail}
-                  onSendWhatsApp={handleSendWhatsApp}
-                  onView={handleViewProposal}
-                  onEdit={handleEditProposal}
-                  onDelete={handleDeleteProposal}
-                />
-              )}
-            </div>
-          </main>
-        </div>
-
-        {showProposalForm && (
-          <ProposalForm
-            onClose={() => setShowProposalForm(false)}
-            onSubmit={handleSubmitProposal}
-          />
-        )}
-
-        {editingProposal && (
-          <ProposalEditModal
-            proposal={editingProposal}
-            isOpen={!!editingProposal}
-            onClose={() => setEditingProposal(null)}
-            onUpdate={handleUpdateProposal}
-          />
-        )}
-
-        <DeleteConfirmDialog
-          isOpen={!!deletingProposal}
-          onClose={() => setDeletingProposal(null)}
-          onConfirm={confirmDeleteProposal}
-          title="Excluir Proposta"
-          description={
-            deletingProposal
-              ? `Tem certeza que deseja excluir a proposta de ${deletingProposal.clientName}? Esta ação não pode ser desfeita.`
-              : ""
-          }
-        />
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-4 md:mb-6">
+        <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">
+          Propostas Jurídicas
+        </h2>
+        <p className="text-sm md:text-base text-muted-foreground">
+          Gerencie e envie suas propostas para clientes via email ou WhatsApp
+        </p>
       </div>
-    </SidebarProvider>
+
+      {/* Filters */}
+      <ProposalFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        totalCount={proposals.length}
+        filteredCount={filteredProposals.length}
+      />
+
+      {/* Proposals List */}
+      {loading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <ProposalList
+          proposals={filteredProposals}
+          onSendEmail={handleSendEmail}
+          onSendWhatsApp={handleSendWhatsApp}
+          onView={handleViewProposal}
+          onEdit={handleEditProposal}
+          onDelete={handleDeleteProposal}
+        />
+      )}
+
+      {editingProposal && (
+        <ProposalEditModal
+          proposal={editingProposal}
+          isOpen={!!editingProposal}
+          onClose={() => setEditingProposal(null)}
+          onUpdate={handleUpdateProposal}
+        />
+      )}
+
+      <DeleteConfirmDialog
+        isOpen={!!deletingProposal}
+        onClose={() => setDeletingProposal(null)}
+        onConfirm={confirmDeleteProposal}
+        title="Excluir Proposta"
+        description={
+          deletingProposal
+            ? `Tem certeza que deseja excluir a proposta de ${deletingProposal.clientName}? Esta ação não pode ser desfeita.`
+            : ""
+        }
+      />
+    </div>
   );
 };
 
