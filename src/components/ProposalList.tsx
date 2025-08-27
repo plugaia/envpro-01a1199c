@@ -67,6 +67,16 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView, o
   };
 
   const handleSendEmail = async (proposal: Proposal) => {
+    // Check if user can view client details before sending email
+    if (!proposal.canViewClientDetails) {
+      toast({
+        title: "Acesso restrito",
+        description: "Apenas administradores podem enviar emails com dados de contato dos clientes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const response = await supabase.functions.invoke('send-proposal-email', {
         body: { proposalId: proposal.id }
@@ -162,14 +172,20 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView, o
               {proposals.map((proposal) => (
                 <TableRow key={proposal.id} className="hover:bg-muted/30 transition-colors">
                   <TableCell>
-                    <div>
-                      <div className="font-medium text-sm leading-tight">
-                        {proposal.clientName}
+                      <div>
+                        <div className="font-medium text-sm leading-tight">
+                          {proposal.clientName}
+                        </div>
+                        {proposal.canViewClientDetails ? (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {proposal.clientEmail}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Email restrito
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {proposal.clientEmail}
-                      </div>
-                    </div>
                   </TableCell>
                   
                   <TableCell>
@@ -213,24 +229,26 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView, o
                   
                    <TableCell>
                      <div className="flex items-center justify-center gap-1 flex-wrap">
-                       <Button
-                         size="sm"
-                         variant="ghost"
-                         onClick={() => handleSendEmail(proposal)}
-                         className="h-7 w-7 p-0"
-                         title="Enviar por Email"
-                       >
-                         <Mail className="w-3 h-3" />
-                       </Button>
-                       <Button
-                         size="sm"
-                         variant="ghost"
-                         onClick={() => onSendWhatsApp(proposal)}
-                         className="h-7 w-7 p-0"
-                         title="Enviar por WhatsApp"
-                       >
-                         <MessageCircle className="w-3 h-3" />
-                       </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleSendEmail(proposal)}
+                          className="h-7 w-7 p-0"
+                          title="Enviar por Email"
+                          disabled={!proposal.canViewClientDetails}
+                        >
+                          <Mail className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onSendWhatsApp(proposal)}
+                          className="h-7 w-7 p-0"
+                          title="Enviar por WhatsApp"
+                          disabled={!proposal.canViewClientDetails}
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                        </Button>
                        <Button
                          size="sm"
                          variant="ghost"

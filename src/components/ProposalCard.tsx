@@ -21,6 +21,7 @@ export interface Proposal {
   createdAt: Date;
   updatedAt: Date;
   assignee?: string;
+  canViewClientDetails?: boolean; // New field for role-based access control
 }
 
 interface ProposalCardProps {
@@ -170,7 +171,11 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView, on
             <h3 className="font-semibold text-lg text-card-foreground">
               {proposal.clientName}
             </h3>
-            <p className="text-sm text-muted-foreground">{proposal.clientEmail}</p>
+            {proposal.canViewClientDetails ? (
+              <p className="text-sm text-muted-foreground">{proposal.clientEmail}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Email restrito</p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Badge className={statusColors[proposal.status]}>
@@ -230,6 +235,7 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView, on
               variant="outline"
               onClick={() => handleSendEmail(proposal)}
               className="flex items-center gap-1"
+              disabled={!proposal.canViewClientDetails}
             >
               <Mail className="w-3 h-3" />
               Email
@@ -239,6 +245,7 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView, on
               variant="outline"
               onClick={() => onSendWhatsApp(proposal)}
               className="flex items-center gap-1"
+              disabled={!proposal.canViewClientDetails}
             >
               <MessageCircle className="w-3 h-3" />
               WhatsApp

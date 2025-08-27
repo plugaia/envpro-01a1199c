@@ -344,6 +344,29 @@ export type Database = {
           last_name: string
         }[]
       }
+      get_proposal_by_id: {
+        Args: { p_proposal_id: string }
+        Returns: {
+          assignee: string
+          can_view_client_details: boolean
+          cedible_value: number
+          client_email: string
+          client_name: string
+          client_phone: string
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          organization_name: string
+          process_number: string
+          proposal_value: number
+          receiver_type: string
+          status: string
+          updated_at: string
+          valid_until: string
+        }[]
+      }
       get_proposal_by_token: {
         Args: { access_token: string }
         Returns: {
@@ -363,6 +386,29 @@ export type Database = {
       get_user_company_id: {
         Args: { user_id: string }
         Returns: string
+      }
+      get_user_proposals: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          assignee: string
+          can_view_client_details: boolean
+          cedible_value: number
+          client_email: string
+          client_name: string
+          client_phone: string
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          organization_name: string
+          process_number: string
+          proposal_value: number
+          receiver_type: string
+          status: string
+          updated_at: string
+          valid_until: string
+        }[]
       }
       is_admin: {
         Args: { user_id: string }

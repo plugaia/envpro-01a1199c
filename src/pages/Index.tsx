@@ -43,19 +43,18 @@ const Index = () => {
     try {
       setLoading(true);
       
+      // Use the secure function that applies role-based field access
       const { data, error } = await supabase
-        .from('proposals')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .rpc('get_user_proposals');
 
       if (error) throw error;
 
       // Transform data to match Proposal interface
-      const transformedProposals: Proposal[] = data.map(proposal => ({
+      const transformedProposals: Proposal[] = data.map((proposal: any) => ({
         id: proposal.id,
         clientName: proposal.client_name,
-        clientEmail: proposal.client_email,
-        clientPhone: proposal.client_phone,
+        clientEmail: proposal.client_email, // Will be masked for non-admins
+        clientPhone: proposal.client_phone, // Will be masked for non-admins
         processNumber: proposal.process_number,
         organizationName: proposal.organization_name,
         cedibleValue: parseFloat(proposal.cedible_value.toString()),
@@ -65,6 +64,7 @@ const Index = () => {
         createdAt: new Date(proposal.created_at),
         updatedAt: new Date(proposal.updated_at),
         assignee: "Sistema", // TODO: Get from created_by relation
+        canViewClientDetails: proposal.can_view_client_details, // New field for UI control
       }));
 
       setProposals(transformedProposals);
@@ -111,6 +111,16 @@ const Index = () => {
   };
 
   const handleSendEmail = async (proposal: Proposal) => {
+    // Check if user can view client details before sending email
+    if (!proposal.canViewClientDetails) {
+      toast({
+        title: "Acesso restrito",
+        description: "Apenas administradores podem enviar emails com dados de contato dos clientes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const response = await supabase.functions.invoke('send-proposal-email', {
         body: { proposalId: proposal.id }
@@ -133,6 +143,16 @@ const Index = () => {
   };
 
   const handleSendWhatsApp = async (proposal: Proposal) => {
+    // Check if user can view client details before sending WhatsApp
+    if (!proposal.canViewClientDetails) {
+      toast({
+        title: "Acesso restrito",
+        description: "Apenas administradores podem enviar mensagens com dados de contato dos clientes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       console.log('Proposal object:', proposal);
       console.log('Client phone:', proposal.clientPhone);
@@ -154,7 +174,7 @@ Temos uma proposta de antecipação de crédito judicial de *R$ ${proposal.propo
 Para visualizar os detalhes e aceitar a proposta, clique no link:
 ${proposalUrl}
 
-Equipe LegalProp 📋⚖️`
+Equipe EnvPRO 📋⚖️`
       );
       
       // Use client's phone number for WhatsApp
