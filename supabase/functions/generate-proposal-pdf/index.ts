@@ -31,7 +31,7 @@ serve(async (req) => {
       );
     }
 
-    // Get proposal data
+    // Get proposal data (without sensitive contact info)
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
       .select('*, companies(name, cnpj)')
@@ -45,6 +45,20 @@ serve(async (req) => {
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Get client contact data using secure function
+    const { data: contactData, error: contactError } = await supabase
+      .rpc('get_client_contact', { p_proposal_id: proposalId });
+
+    if (contactError || !contactData || contactData.length === 0) {
+      console.error('Contact data fetch error:', contactError);
+      return new Response(
+        JSON.stringify({ error: 'Contact information not accessible or not found' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const clientContact = contactData[0];
 
     const companyName = proposal.companies?.name || 'Empresa';
     const companyCnpj = proposal.companies?.cnpj || '';
@@ -99,8 +113,8 @@ serve(async (req) => {
         <div class="section client-info">
           <h2>Dados do Cliente</h2>
           <p><strong>Nome:</strong> ${proposal.client_name}</p>
-          <p><strong>Email:</strong> ${proposal.client_email}</p>
-          <p><strong>Telefone:</strong> ${proposal.client_phone}</p>
+          <p><strong>Email:</strong> ${clientContact.email}</p>
+          <p><strong>Telefone:</strong> ${clientContact.phone}</p>
         </div>
 
         ${proposal.process_number || proposal.organization_name ? `

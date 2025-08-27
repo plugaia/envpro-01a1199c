@@ -35,7 +35,7 @@ serve(async (req) => {
       );
     }
 
-    // Get proposal data
+    // Get proposal data (without sensitive contact info)
     const { data: proposal, error: proposalError } = await supabase
       .from('proposals')
       .select('*, companies(name)')
@@ -50,6 +50,20 @@ serve(async (req) => {
       );
     }
 
+    // Get client contact data using secure function
+    const { data: contactData, error: contactError } = await supabase
+      .rpc('get_client_contact', { p_proposal_id: proposalId });
+
+    if (contactError || !contactData || contactData.length === 0) {
+      console.error('Contact data fetch error:', contactError);
+      return new Response(
+        JSON.stringify({ error: 'Contact information not accessible or not found' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const clientContact = contactData[0];
+
     // Generate secure access token for the proposal
     const { data: tokenData, error: tokenError } = await supabase
       .rpc('create_proposal_access_token', { p_proposal_id: proposalId });
@@ -62,7 +76,10 @@ serve(async (req) => {
       );
     }
 
-    const proposalUrl = `https://409390a7-b191-4aa2-80d6-e46a971d8713.sandbox.lovable.dev/proposta/${proposalId}?token=${tokenData}`;
+    // Get the current host from the request or use environment variable
+    const host = req.headers.get('host') || req.headers.get('x-forwarded-host') || Deno.env.get('SITE_URL') || 'localhost:3000';
+    const protocol = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
+    const proposalUrl = `${protocol}://${host}/proposta/${proposalId}?token=${tokenData}`;
     const companyName = proposal.companies?.name || 'Empresa';
     
     const formatCurrency = (value: number) => {
@@ -74,7 +91,7 @@ serve(async (req) => {
 
     const emailResponse = await resend.emails.send({
       from: `${companyName} <onboarding@resend.dev>`,
-      to: [recipientEmail || proposal.client_email],
+      to: [recipientEmail || clientContact.email],
       subject: `Proposta de Antecipação - ${formatCurrency(proposal.proposal_value)}`,
       html: `
         <!DOCTYPE html>
@@ -139,7 +156,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         messageId: emailResponse.data?.id,
-        sentTo: recipientEmail || proposal.client_email
+        sentTo: recipientEmail || clientContact.email
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
