@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { authLimiter, checkRateLimit, formatRemainingTime } from '@/lib/rateLimiter';
+import { userRegistrationSchema, emailSchema, passwordSchema } from '@/lib/validation';
 
 interface AuthContextType {
   user: User | null;
@@ -72,6 +74,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     cnpj: string;
     responsiblePhone: string;
   }) => {
+    // Rate limiting check
+    const rateLimitCheck = checkRateLimit(authLimiter, 'signup', email);
+    if (!rateLimitCheck.allowed) {
+      const remainingTime = formatRemainingTime(rateLimitCheck.remainingTime || 0);
+      return {
+        error: {
+          message: `Muitas tentativas de cadastro. Tente novamente em ${remainingTime}.`
+        } as AuthError
+      };
+    }
+
+    // Input validation
+    try {
+      const validationData = {
+        email,
+        password,
+        confirmPassword: password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        companyName: userData.companyName,
+        cnpj: userData.cnpj,
+        responsiblePhone: userData.responsiblePhone
+      };
+      
+      userRegistrationSchema.parse(validationData);
+    } catch (validationError: any) {
+      return {
+        error: {
+          message: `Dados inválidos: ${validationError.errors?.[0]?.message || 'Verifique os campos preenchidos'}`
+        } as AuthError
+      };
+    }
     const redirectUrl = `${window.location.origin}/`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -139,6 +173,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Rate limiting check
+    const rateLimitCheck = checkRateLimit(authLimiter, 'signin', email);
+    if (!rateLimitCheck.allowed) {
+      const remainingTime = formatRemainingTime(rateLimitCheck.remainingTime || 0);
+      return {
+        error: {
+          message: `Muitas tentativas de login. Tente novamente em ${remainingTime}.`
+        } as AuthError
+      };
+    }
+
+    // Input validation
+    try {
+      emailSchema.parse(email);
+      passwordSchema.parse(password);
+    } catch (validationError: any) {
+      return {
+        error: {
+          message: `Dados inválidos: ${validationError.errors?.[0]?.message || 'Email ou senha inválidos'}`
+        } as AuthError
+      };
+    }
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { exportLimiter, checkRateLimit, formatRemainingTime } from '@/lib/rateLimiter';
 
 export function BackupExport() {
   const [isExporting, setIsExporting] = useState(false);
@@ -14,6 +15,19 @@ export function BackupExport() {
   const handleExportData = async () => {
     setIsExporting(true);
     
+    // Rate limiting check
+    const rateLimitCheck = checkRateLimit(exportLimiter, 'export_data');
+    if (!rateLimitCheck.allowed) {
+      const remainingTime = formatRemainingTime(rateLimitCheck.remainingTime || 0);
+      toast({
+        title: "Limite excedido",
+        description: `Você está fazendo exports muito rapidamente. Tente novamente em ${remainingTime}.`,
+        variant: "destructive",
+      });
+      setIsExporting(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.rpc('export_company_data');
       

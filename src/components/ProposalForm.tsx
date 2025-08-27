@@ -10,6 +10,8 @@ import { X, Send, Plus, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { proposalLimiter, checkRateLimit, formatRemainingTime } from '@/lib/rateLimiter';
+import { nameSchema, emailSchema, phoneSchema, numericSchema, textSchema } from '@/lib/validation';
 
 interface ProposalFormProps {
   onClose: () => void;
@@ -40,6 +42,48 @@ export function ProposalForm({ onClose, onSubmit }: ProposalFormProps) {
       toast({
         title: "Erro de autenticação",
         description: "Você precisa estar logado para criar propostas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Rate limiting check
+    const rateLimitCheck = checkRateLimit(proposalLimiter, 'create_proposal', user.id);
+    if (!rateLimitCheck.allowed) {
+      const remainingTime = formatRemainingTime(rateLimitCheck.remainingTime || 0);
+      toast({
+        title: "Limite excedido",
+        description: `Você está criando propostas muito rapidamente. Tente novamente em ${remainingTime}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Input validation
+    try {
+      nameSchema.parse(formData.clientName);
+      emailSchema.parse(formData.clientEmail);
+      phoneSchema.parse(formData.clientPhone);
+      
+      const cedibleValue = parseFloat(formData.cedibleValue.replace(/[^\d,]/g, '').replace(',', '.'));
+      const proposalValue = parseFloat(formData.proposalValue.replace(/[^\d,]/g, '').replace(',', '.'));
+      
+      numericSchema(0.01).parse(cedibleValue);
+      numericSchema(0.01).parse(proposalValue);
+      
+      if (formData.processNumber) {
+        textSchema(10, 50).parse(formData.processNumber);
+      }
+      if (formData.organizationName) {
+        textSchema(2, 200).parse(formData.organizationName);
+      }
+      if (formData.description) {
+        textSchema(0, 2000).parse(formData.description);
+      }
+    } catch (validationError: any) {
+      toast({
+        title: "Dados inválidos",
+        description: validationError.errors?.[0]?.message || "Verifique os campos preenchidos",
         variant: "destructive",
       });
       return;
