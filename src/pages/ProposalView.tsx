@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, X, FileText, Calendar, DollarSign, Building } from "lucide-react";
+import { Check, X, FileText, Calendar, DollarSign, Building, User, Phone, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { PhoneVerificationModal } from "@/components/PhoneVerificationModal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const ProposalView = () => {
   const { proposalId } = useParams();
@@ -20,6 +21,7 @@ const ProposalView = () => {
   const [isVerified, setIsVerified] = useState(!!user); // Authenticated users skip verification
   const [showVerification, setShowVerification] = useState(false);
   const [verificationError, setVerificationError] = useState("");
+  const [lawyerInfo, setLawyerInfo] = useState<any>(null);
   
   // Check if this is a token-based access (URL contains token parameter)
   const urlParams = new URLSearchParams(window.location.search);
@@ -105,6 +107,11 @@ const ProposalView = () => {
       setProposal(data);
       setStatus(data.status as 'pendente' | 'aprovada' | 'rejeitada');
       
+      // Fetch lawyer information if we have created_by
+      if (data.created_by) {
+        await fetchLawyerInfo(data.created_by);
+      }
+      
     } catch (error) {
       console.error('Error fetching proposal:', error);
       toast({
@@ -114,6 +121,36 @@ const ProposalView = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLawyerInfo = async (createdBy: string) => {
+    try {
+      // Get lawyer profile info
+      const { data: lawyerData, error: lawyerError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, avatar_url, phone, user_id')
+        .eq('user_id', createdBy)
+        .single();
+
+      if (lawyerError) {
+        console.error('Error fetching lawyer info:', lawyerError);
+        return;
+      }
+
+      // Get lawyer's email from auth.users
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(createdBy);
+      
+      if (userError) {
+        console.error('Error fetching user info:', userError);
+      }
+
+      setLawyerInfo({
+        ...lawyerData,
+        email: userData?.user?.email || ''
+      });
+    } catch (error) {
+      console.error('Error in fetchLawyerInfo:', error);
     }
   };
 
@@ -409,6 +446,46 @@ const ProposalView = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Lawyer Information */}
+        {lawyerInfo && (
+          <Card className="mt-6">
+            <CardHeader>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                Advogado Responsável
+              </h3>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={lawyerInfo.avatar_url} alt="Foto do advogado" />
+                  <AvatarFallback className="text-lg">
+                    {lawyerInfo.first_name?.[0]?.toUpperCase() || 'A'}
+                    {lawyerInfo.last_name?.[0]?.toUpperCase() || ''}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h4 className="font-semibold mb-2">
+                    {lawyerInfo.first_name} {lawyerInfo.last_name}
+                  </h4>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      <span>{lawyerInfo.email}</span>
+                    </div>
+                    {lawyerInfo.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        <span>{lawyerInfo.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
