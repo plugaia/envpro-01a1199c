@@ -133,6 +133,9 @@ const Index = () => {
   };
 
   const handleSendWhatsApp = (proposal: Proposal) => {
+    console.log('Proposal object:', proposal);
+    console.log('Client phone:', proposal.clientPhone);
+    
     // Create WhatsApp message with proposal link using client's WhatsApp number
     const message = encodeURIComponent(
       `Olá ${proposal.clientName}! 
@@ -147,9 +150,13 @@ Equipe LegalProp 📋⚖️`
     
     // Use client's phone number for WhatsApp
     const phoneNumber = proposal.clientPhone?.replace(/[^\d]/g, '') || "";
+    console.log('Formatted phone number:', phoneNumber);
+    
     const whatsappUrl = phoneNumber 
       ? `https://wa.me/${phoneNumber}?text=${message}`
       : `https://wa.me/?text=${message}`;
+    
+    console.log('WhatsApp URL:', whatsappUrl);
     
     window.open(whatsappUrl, '_blank');
     
