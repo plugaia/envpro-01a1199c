@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,12 +6,20 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Send, Plus, User } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { X, Send, Plus, User, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { proposalLimiter, checkRateLimit, formatRemainingTime } from '@/lib/rateLimiter';
 import { nameSchema, emailSchema, phoneSchema, numericSchema, textSchema } from '@/lib/validation';
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
 
 interface ProposalFormProps {
   onClose: () => void;
@@ -22,6 +30,10 @@ export function ProposalForm({ onClose, onSubmit }: ProposalFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [useExistingClient, setUseExistingClient] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [clientSearch, setClientSearch] = useState("");
   
   const [formData, setFormData] = useState({
     clientName: "",
@@ -34,6 +46,64 @@ export function ProposalForm({ onClose, onSubmit }: ProposalFormProps) {
     receiverType: "advogado" as "advogado" | "autor" | "precatorio",
     description: "",
   });
+
+  // Fetch clients when component mounts
+  useEffect(() => {
+    if (user && useExistingClient) {
+      fetchClients();
+    }
+  }, [user, useExistingClient]);
+
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name, email, phone')
+        .order('name');
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast({
+        title: "Erro ao carregar clientes",
+        description: "Não foi possível carregar a lista de clientes.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredClients = clients.filter(client =>
+    client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    client.email.toLowerCase().includes(clientSearch.toLowerCase())
+  );
+
+  const handleClientSelect = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    if (client) {
+      setSelectedClientId(clientId);
+      setFormData(prev => ({
+        ...prev,
+        clientName: client.name,
+        clientEmail: client.email,
+        clientPhone: client.phone,
+      }));
+    }
+  };
+
+  const handleUseExistingClientChange = (checked: boolean) => {
+    setUseExistingClient(checked);
+    if (!checked) {
+      setSelectedClientId("");
+      setClientSearch("");
+      setFormData(prev => ({
+        ...prev,
+        clientName: "",
+        clientEmail: "",
+        clientPhone: "",
+      }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,6 +184,40 @@ export function ProposalForm({ onClose, onSubmit }: ProposalFormProps) {
         throw new Error('Perfil de usuário não encontrado');
       }
 
+      let clientId = selectedClientId;
+
+      // If using new client, create or find existing client
+      if (!useExistingClient) {
+        // First check if client already exists
+        const { data: existingClient, error: clientSearchError } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('company_id', profile.company_id)
+          .eq('email', formData.clientEmail)
+          .maybeSingle();
+
+        if (clientSearchError) throw clientSearchError;
+
+        if (existingClient) {
+          clientId = existingClient.id;
+        } else {
+          // Create new client
+          const { data: newClient, error: clientError } = await supabase
+            .from('clients')
+            .insert([{
+              company_id: profile.company_id,
+              name: formData.clientName,
+              email: formData.clientEmail,
+              phone: formData.clientPhone
+            }])
+            .select('id')
+            .single();
+
+          if (clientError) throw clientError;
+          clientId = newClient.id;
+        }
+      }
+
       // Create proposal (sensitive data will be stored separately)
       const proposalData = {
         company_id: profile.company_id,
@@ -140,6 +244,7 @@ export function ProposalForm({ onClose, onSubmit }: ProposalFormProps) {
         .from('client_contacts')
         .insert([{
           proposal_id: proposalResult.id,
+          client_id: clientId,
           email: formData.clientEmail,
           phone: formData.clientPhone
         }]);
@@ -210,40 +315,106 @@ export function ProposalForm({ onClose, onSubmit }: ProposalFormProps) {
                 Informações do Cliente
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clientName">Nome Completo*</Label>
-                  <Input
-                    id="clientName"
-                    placeholder="Nome completo do cliente"
-                    value={formData.clientName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="clientEmail">E-mail*</Label>
-                  <Input
-                    id="clientEmail"
-                    type="email"
-                    placeholder="cliente@email.com"
-                    value={formData.clientEmail}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="clientPhone">Telefone/WhatsApp*</Label>
-                <Input
-                  id="clientPhone"
-                  placeholder="+55 67 99999-9999"
-                  value={formData.clientPhone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, clientPhone: e.target.value }))}
-                  required
+              {/* Toggle for existing vs new client */}
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="use-existing-client"
+                  checked={useExistingClient}
+                  onCheckedChange={handleUseExistingClientChange}
                 />
+                <Label htmlFor="use-existing-client">Usar cliente existente</Label>
               </div>
+
+              {useExistingClient ? (
+                <div className="space-y-4">
+                  {/* Client search and selection */}
+                  <div className="space-y-2">
+                    <Label htmlFor="clientSearch">Buscar Cliente</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="clientSearch"
+                        placeholder="Digite o nome ou email do cliente..."
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  {clientSearch && (
+                    <div className="space-y-2">
+                      <Label>Selecionar Cliente</Label>
+                      <Select value={selectedClientId} onValueChange={handleClientSelect}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Escolha um cliente..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border shadow-md z-50">
+                          {filteredClients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{client.name}</span>
+                                <span className="text-sm text-muted-foreground">{client.email}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                          {filteredClients.length === 0 && (
+                            <SelectItem value="no-results" disabled>
+                              Nenhum cliente encontrado
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Display selected client info */}
+                  {selectedClientId && (
+                    <div className="p-3 bg-muted/20 rounded-lg border">
+                      <p className="text-sm font-medium">{formData.clientName}</p>
+                      <p className="text-sm text-muted-foreground">{formData.clientEmail}</p>
+                      <p className="text-sm text-muted-foreground">{formData.clientPhone}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="clientName">Nome Completo*</Label>
+                      <Input
+                        id="clientName"
+                        placeholder="Nome completo do cliente"
+                        value={formData.clientName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="clientEmail">E-mail*</Label>
+                      <Input
+                        id="clientEmail"
+                        type="email"
+                        placeholder="cliente@email.com"
+                        value={formData.clientEmail}
+                        onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="clientPhone">Telefone/WhatsApp*</Label>
+                    <Input
+                      id="clientPhone"
+                      placeholder="+55 67 99999-9999"
+                      value={formData.clientPhone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, clientPhone: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Process Information */}
