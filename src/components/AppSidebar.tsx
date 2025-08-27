@@ -88,7 +88,7 @@ export function AppSidebar() {
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent className="bg-sidebar">
-            <SidebarMenu className={`space-y-2 ${collapsed ? "px-1" : "px-2"}`}>
+            <SidebarMenu className={`${collapsed ? "space-y-3 px-1" : "space-y-1 px-2"}`}>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
@@ -101,8 +101,8 @@ export function AppSidebar() {
                       className={({ isActive }) => 
                         `flex items-center rounded-lg text-sm font-medium transition-colors ${
                           collapsed 
-                            ? "justify-center p-2.5 mx-1" 
-                            : "gap-3 px-3 py-2.5"
+                            ? "justify-center p-3 mx-1" 
+                            : "gap-3 px-3 py-2"
                         } ${
                           isActive 
                             ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" 
