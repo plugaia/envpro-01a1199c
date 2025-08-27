@@ -216,53 +216,53 @@ const Clientes = () => {
             </Button>
           </header>
           
-          <main className="flex-1 p-4 md:p-6 lg:p-8">
+          <main className="flex-1 p-6">
             {loading ? (
               <div className="flex items-center justify-center p-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-            <div className="max-w-7xl mx-auto space-y-8">
+            <div className="max-w-7xl mx-auto space-y-6">
               
               {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="card-elegant">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Total de Clientes</p>
-                        <p className="text-3xl font-bold text-primary">{clients.length}</p>
+                        <p className="text-2xl font-bold text-primary">{clients.length}</p>
                       </div>
-                      <div className="p-3 rounded-full bg-primary/10">
-                        <Users className="w-8 h-8 text-primary" />
+                      <div className="p-2 rounded-full bg-primary/10">
+                        <Users className="w-6 h-6 text-primary" />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 
                 <Card className="card-elegant">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Novos este mês</p>
-                        <p className="text-3xl font-bold text-success">3</p>
+                        <p className="text-2xl font-bold text-success">3</p>
                       </div>
-                      <div className="p-3 rounded-full bg-success/10">
-                        <Plus className="w-8 h-8 text-success" />
+                      <div className="p-2 rounded-full bg-success/10">
+                        <Plus className="w-6 h-6 text-success" />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 
                 <Card className="card-elegant">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">Com WhatsApp</p>
-                        <p className="text-3xl font-bold text-warning">{clients.length}</p>
+                        <p className="text-2xl font-bold text-warning">{clients.length}</p>
                       </div>
-                      <div className="p-3 rounded-full bg-warning/10">
-                        <Users className="w-8 h-8 text-warning" />
+                      <div className="p-2 rounded-full bg-warning/10">
+                        <Users className="w-6 h-6 text-warning" />
                       </div>
                     </div>
                   </CardContent>
@@ -271,7 +271,7 @@ const Clientes = () => {
 
               {/* Search */}
               <Card className="card-elegant">
-                <CardContent className="p-6">
+                <CardContent className="p-4">
                   <div className="flex items-center gap-4">
                     <div className="flex-1 relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
