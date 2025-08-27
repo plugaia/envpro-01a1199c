@@ -70,12 +70,12 @@ export function ProposalForm({ onClose, onSubmit }: ProposalFormProps) {
         throw new Error('Perfil de usuário não encontrado');
       }
 
-      // Create proposal
+      // Create proposal (with temporary values for required fields, sensitive data in separate table)
       const proposalData = {
         company_id: profile.company_id,
         client_name: formData.clientName,
-        client_email: formData.clientEmail,
-        client_phone: formData.clientPhone,
+        client_email: 'temp@example.com', // Temporary value, will be removed later
+        client_phone: '+55000000000', // Temporary value, will be removed later
         process_number: formData.processNumber || null,
         organization_name: formData.organizationName || null,
         cedible_value: parseFloat(formData.cedibleValue.replace(/[^\d,]/g, '').replace(',', '.')),
@@ -85,11 +85,24 @@ export function ProposalForm({ onClose, onSubmit }: ProposalFormProps) {
         valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
       };
 
-      const { error } = await supabase
+      const { data: proposalResult, error: proposalError } = await supabase
         .from('proposals')
-        .insert([proposalData]);
+        .insert([proposalData])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (proposalError) throw proposalError;
+
+      // Insert client contact data in separate table
+      const { error: contactError } = await supabase
+        .from('client_contacts')
+        .insert([{
+          proposal_id: proposalResult.id,
+          email: formData.clientEmail,
+          phone: formData.clientPhone
+        }]);
+
+      if (contactError) throw contactError;
 
       toast({
         title: "Proposta criada",

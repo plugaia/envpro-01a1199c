@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_contacts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          phone: string
+          proposal_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          phone: string
+          proposal_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          phone?: string
+          proposal_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contacts_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address_city: string | null
@@ -331,6 +366,13 @@ export type Database = {
         Returns: {
           invitation_id: string
           invitation_token: string
+        }[]
+      }
+      get_client_contact: {
+        Args: { p_proposal_id: string }
+        Returns: {
+          email: string
+          phone: string
         }[]
       }
       get_invitation_for_registration: {

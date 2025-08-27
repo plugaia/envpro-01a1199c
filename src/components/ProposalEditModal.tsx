@@ -22,6 +22,7 @@ export function ProposalEditModal({ proposal, isOpen, onClose, onUpdate }: Propo
   const [formData, setFormData] = useState({
     clientName: proposal.clientName,
     clientEmail: proposal.clientEmail,
+    clientPhone: proposal.clientPhone,
     processNumber: proposal.processNumber || "",
     organizationName: proposal.organizationName || "",
     cedibleValue: proposal.cedibleValue,
@@ -36,6 +37,7 @@ export function ProposalEditModal({ proposal, isOpen, onClose, onUpdate }: Propo
       setFormData({
         clientName: proposal.clientName,
         clientEmail: proposal.clientEmail,
+        clientPhone: proposal.clientPhone,
         processNumber: proposal.processNumber || "",
         organizationName: proposal.organizationName || "",
         cedibleValue: proposal.cedibleValue,
@@ -52,11 +54,11 @@ export function ProposalEditModal({ proposal, isOpen, onClose, onUpdate }: Propo
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // Update proposal (without sensitive data)
+      const { error: proposalError } = await supabase
         .from('proposals')
         .update({
           client_name: formData.clientName,
-          client_email: formData.clientEmail,
           process_number: formData.processNumber || null,
           organization_name: formData.organizationName || null,
           cedible_value: formData.cedibleValue,
@@ -68,7 +70,19 @@ export function ProposalEditModal({ proposal, isOpen, onClose, onUpdate }: Propo
         })
         .eq('id', proposal.id);
 
-      if (error) throw error;
+      if (proposalError) throw proposalError;
+
+      // Update client contact data in separate table
+      const { error: contactError } = await supabase
+        .from('client_contacts')
+        .upsert({
+          proposal_id: proposal.id,
+          email: formData.clientEmail,
+          phone: formData.clientPhone,
+          updated_at: new Date().toISOString()
+        });
+
+      if (contactError) throw contactError;
 
       toast({
         title: "Proposta atualizada!",
@@ -125,6 +139,17 @@ export function ProposalEditModal({ proposal, isOpen, onClose, onUpdate }: Propo
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="clientPhone">Telefone do Cliente *</Label>
+            <Input
+              id="clientPhone"
+              value={formData.clientPhone}
+              onChange={(e) => handleInputChange("clientPhone", e.target.value)}
+              required
+              placeholder="+55 67 99999-9999"
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
