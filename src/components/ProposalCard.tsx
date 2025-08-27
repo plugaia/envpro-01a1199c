@@ -119,20 +119,23 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView, on
         throw new Error('No HTML content received');
       }
       
-      // Create a blob from the HTML and trigger download
-      const blob = new Blob([data.htmlContent], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = data.fileName || `proposta-${proposal.id}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      // Create a new window with the HTML content and trigger print
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(data.htmlContent);
+        printWindow.document.close();
+        
+        // Wait for content to load then trigger print
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+      }
 
       toast({
-        title: "PDF preparado",
-        description: "Arquivo HTML baixado. Use Ctrl+P no arquivo para salvar como PDF.",
+        title: "PDF sendo gerado",
+        description: "Janela de impressão aberta. Use 'Salvar como PDF' nas opções de impressão.",
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
