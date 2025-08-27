@@ -548,6 +548,16 @@ export type Database = {
           last_name: string
         }[]
       }
+      get_lawyer_info: {
+        Args: { p_proposal_id: string }
+        Returns: {
+          avatar_url: string
+          email: string
+          first_name: string
+          last_name: string
+          phone: string
+        }[]
+      }
       get_proposal_by_id: {
         Args: { p_proposal_id: string }
         Returns: {

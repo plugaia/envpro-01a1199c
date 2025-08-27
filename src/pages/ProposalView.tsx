@@ -109,7 +109,7 @@ const ProposalView = () => {
       
       // Fetch lawyer information if we have created_by
       if (data.created_by) {
-        await fetchLawyerInfo(data.created_by);
+        await fetchLawyerInfo();
       }
       
     } catch (error) {
@@ -124,31 +124,20 @@ const ProposalView = () => {
     }
   };
 
-  const fetchLawyerInfo = async (createdBy: string) => {
+  const fetchLawyerInfo = async () => {
     try {
-      // Get lawyer profile info
+      // Use RPC function to get lawyer information
       const { data: lawyerData, error: lawyerError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, avatar_url, phone, user_id')
-        .eq('user_id', createdBy)
-        .single();
+        .rpc('get_lawyer_info', { p_proposal_id: proposalId });
 
       if (lawyerError) {
         console.error('Error fetching lawyer info:', lawyerError);
         return;
       }
 
-      // Get lawyer's email from auth.users
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(createdBy);
-      
-      if (userError) {
-        console.error('Error fetching user info:', userError);
+      if (lawyerData && lawyerData.length > 0) {
+        setLawyerInfo(lawyerData[0]);
       }
-
-      setLawyerInfo({
-        ...lawyerData,
-        email: userData?.user?.email || ''
-      });
     } catch (error) {
       console.error('Error in fetchLawyerInfo:', error);
     }
