@@ -180,40 +180,36 @@ const Relatorios = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-foreground">Relatórios</h1>
-                  <p className="text-sm text-muted-foreground">Análise de desempenho e estatísticas</p>
-                </div>
-              </div>
+    <div className="min-h-screen flex w-full bg-background">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 h-16 border-b border-border bg-card flex items-center justify-between px-6 z-10">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <BarChart3 className="w-4 h-4 text-primary" />
             </div>
-            <div className="flex items-center gap-3">
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-md z-50">
-                  <SelectItem value="7">Últimos 7 dias</SelectItem>
-                  <SelectItem value="30">Últimos 30 dias</SelectItem>
-                  <SelectItem value="90">Últimos 90 dias</SelectItem>
-                  <SelectItem value="365">Último ano</SelectItem>
-                </SelectContent>
-              </Select>
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">Relatórios</h1>
+              <p className="text-sm text-muted-foreground">Análise de desempenho e estatísticas</p>
             </div>
-          </header>
-          
-          <main className="flex-1 p-6">
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border border-border shadow-md z-50">
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+              <SelectItem value="365">Último ano</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </header>
+      
+      <main className="flex-1 p-6 mt-16">
             {loading ? (
               <div className="flex items-center justify-center p-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -605,9 +601,7 @@ const Relatorios = () => {
             )}
           </main>
         </div>
-      </div>
-    </SidebarProvider>
-  );
+    );
 };
 
 export default Relatorios;

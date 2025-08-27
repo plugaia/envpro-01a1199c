@@ -189,34 +189,30 @@ const Clientes = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-foreground">Clientes</h1>
-                  <p className="text-sm text-muted-foreground">Gerencie seus clientes cadastrados</p>
-                </div>
-              </div>
+    <div className="min-h-screen flex w-full bg-background">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 h-16 border-b border-border bg-card flex items-center justify-between px-6 z-10">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Users className="w-4 h-4 text-primary" />
             </div>
-            <Button
-              onClick={() => setShowNewClientForm(true)}
-              className="bg-primary hover:bg-primary-hover text-primary-foreground"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Cliente
-            </Button>
-          </header>
-          
-          <main className="flex-1 p-6">
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">Clientes</h1>
+              <p className="text-sm text-muted-foreground">Gerencie seus clientes cadastrados</p>
+            </div>
+          </div>
+        </div>
+        <Button
+          onClick={() => setShowNewClientForm(true)}
+          className="bg-primary hover:bg-primary-hover text-primary-foreground"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Cliente
+        </Button>
+      </header>
+      
+      <main className="flex-1 p-6 mt-16">
             {loading ? (
               <div className="flex items-center justify-center p-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -542,9 +538,7 @@ const Clientes = () => {
             )}
           </main>
         </div>
-      </div>
-    </SidebarProvider>
-  );
+    );
 };
 
 export default Clientes;

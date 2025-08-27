@@ -134,18 +134,22 @@
     transform: translateY(-2px);
   }
 
-  /* Fix sidebar width issues */
+  /* Fix sidebar responsive behavior */
   .group[data-side="left"] {
-    min-width: 16rem;
+    transition: width 0.2s ease-in-out;
   }
 
   .group[data-side="left"][data-state="collapsed"] {
-    min-width: 3rem;
+    width: 3rem !important;
   }
 
-  .group-data-\[side\=left\]\:border-r {
-    border-right-width: 1px;
-    padding: 0;
-    min-width: 3rem;
+  .group[data-side="left"][data-state="expanded"] {
+    width: 16rem !important;
+  }
+
+  /* Content adjustment for sidebar */
+  .sidebar-content {
+    margin-left: 0;
+    transition: margin-left 0.2s ease-in-out;
   }
 }
