@@ -29,7 +29,7 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/auth" element={!user ? <Auth /> : <Index />} />
+      <Route path="/auth" element={<Auth />} />
       <Route path="/convite/:token" element={<TeamInvitation />} />
       <Route path="/proposta/:proposalId" element={<ProposalView />} />
       <Route path="/" element={
