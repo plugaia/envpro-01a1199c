@@ -16,6 +16,13 @@ export type Database = {
     Tables: {
       companies: {
         Row: {
+          address_city: string | null
+          address_complement: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip_code: string | null
           cnpj: string
           created_at: string
           id: string
@@ -25,6 +32,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip_code?: string | null
           cnpj: string
           created_at?: string
           id?: string
@@ -34,6 +48,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip_code?: string | null
           cnpj?: string
           created_at?: string
           id?: string
