@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,11 +10,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { PhoneVerificationModal } from "@/components/PhoneVerificationModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import NotFound from "./NotFound";
 
 const ProposalView = () => {
   const { proposalId } = useParams();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [proposal, setProposal] = useState<any>(null);
   const [status, setStatus] = useState<'pendente' | 'aprovada' | 'rejeitada'>('pendente');
   const [loading, setLoading] = useState(true);
@@ -22,6 +24,7 @@ const ProposalView = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationError, setVerificationError] = useState("");
   const [lawyerInfo, setLawyerInfo] = useState<any>(null);
+  const [showNotFound, setShowNotFound] = useState(false);
   
   // Check if this is a token-based access (URL contains token parameter)
   const urlParams = new URLSearchParams(window.location.search);
@@ -114,6 +117,7 @@ const ProposalView = () => {
       
     } catch (error) {
       console.error('Error fetching proposal:', error);
+      setShowNotFound(true);
       toast({
         title: "Erro",
         description: "Não foi possível carregar a proposta.",
@@ -160,7 +164,12 @@ const ProposalView = () => {
   };
   
   if (!proposalId) {
-    return <Navigate to="/404" replace />;
+    setShowNotFound(true);
+    return <NotFound />;
+  }
+
+  if (showNotFound) {
+    return <NotFound />;
   }
 
   if (loading) {
@@ -171,8 +180,8 @@ const ProposalView = () => {
     );
   }
 
-  if (!proposal) {
-    return <Navigate to="/404" replace />;
+  if (!proposal && !loading) {
+    return <NotFound />;
   }
 
   // Show verification modal for non-authenticated users without valid token
