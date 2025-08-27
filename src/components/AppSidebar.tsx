@@ -55,7 +55,7 @@ export function AppSidebar() {
               {!collapsed && (
                 <>
                   <div className="w-8 h-8 flex items-center justify-center">
-                    <img src={logoIcon} alt="EnvPRO" className="w-8 h-8 object-contain" />
+                    <img src={logoIcon} alt="EnvPRO" className="w-8 h-8 object-contain border-8 border-sidebar-border rounded-lg" />
                   </div>
                   <div>
                     <h2 className="font-bold text-lg text-sidebar-foreground">EnvPRO</h2>
