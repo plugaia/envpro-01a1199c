@@ -64,6 +64,13 @@ serve(async (req) => {
       p_whatsapp_number: whatsappNumber
     });
 
+    // First test if pgcrypto is available
+    console.log('Testing pgcrypto extension...');
+    const { data: testData, error: testError } = await userSupabase
+      .rpc('get_user_company_id', { user_id: (await userSupabase.auth.getUser()).data.user?.id });
+    
+    console.log('Company ID test result:', { testData, testError });
+
     // Create team invitation using the user's context
     const { data: invitationData, error: invitationError } = await userSupabase
       .rpc('create_team_invitation', {
