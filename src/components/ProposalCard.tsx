@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Mail, MessageCircle, Eye, MoreHorizontal, Calendar, DollarSign, Share } from "lucide-react";
+import { Mail, MessageCircle, Eye, MoreHorizontal, Calendar, DollarSign, Share, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +70,17 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: 
         variant: "destructive",
       });
     });
+  };
+
+  const handleDownloadPDF = () => {
+    // Simular download do PDF
+    toast({
+      title: "Download iniciado",
+      description: `PDF da proposta de ${proposal.clientName} será baixado em breve.`,
+    });
+    
+    // Aqui seria implementada a geração do PDF
+    console.log('Downloading PDF for proposal:', proposal.id);
   };
 
   return (
@@ -161,6 +172,15 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView }: 
             >
               <Share className="w-3 h-3" />
               Link
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDownloadPDF}
+              className="flex items-center gap-1"
+            >
+              <Download className="w-3 h-3" />
+              PDF
             </Button>
           </div>
           <Button

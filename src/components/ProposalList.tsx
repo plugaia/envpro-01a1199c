@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Mail, MessageCircle, Eye, Calendar, DollarSign, FileText, Share } from "lucide-react";
+import { Mail, MessageCircle, Eye, Calendar, DollarSign, FileText, Share, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Proposal } from "@/components/ProposalCard";
@@ -63,6 +63,17 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
     });
   };
 
+  const handleDownloadPDF = (proposal: Proposal) => {
+    // Simular download do PDF
+    toast({
+      title: "Download iniciado",
+      description: `PDF da proposta de ${proposal.clientName} será baixado em breve.`,
+    });
+    
+    // Aqui seria implementada a geração do PDF
+    console.log('Downloading PDF for proposal:', proposal.id);
+  };
+
   if (proposals.length === 0) {
     return (
       <Card>
@@ -96,7 +107,7 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
                 <TableHead className="w-[120px] text-right">Proposta</TableHead>
                 <TableHead className="w-[80px]">Data</TableHead>
                 <TableHead className="w-[100px]">Responsável</TableHead>
-                <TableHead className="w-[160px] text-center">Ações</TableHead>
+                <TableHead className="w-[180px] text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -199,6 +210,15 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView }:
                         title="Compartilhar Link"
                       >
                         <Share className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDownloadPDF(proposal)}
+                        className="h-7 w-7 p-0"
+                        title="Baixar PDF"
+                      >
+                        <Download className="w-3 h-3" />
                       </Button>
                       <Button
                         size="sm"
