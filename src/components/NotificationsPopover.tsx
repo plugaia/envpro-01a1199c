@@ -8,69 +8,22 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState } from "react";
+import { useNotifications } from "@/hooks/useNotifications";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface NotificationsPopoverProps {
   children: React.ReactNode;
 }
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  type: 'proposal' | 'client' | 'system';
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    title: 'Nova proposta criada',
-    message: 'Proposta para Maria Santos foi criada com sucesso',
-    time: '5 min',
-    read: false,
-    type: 'proposal'
-  },
-  {
-    id: '2',
-    title: 'Cliente respondeu',
-    message: 'João Oliveira aceitou a proposta #123',
-    time: '1 hora',
-    read: false,
-    type: 'client'
-  },
-  {
-    id: '3',
-    title: 'Lembrete',
-    message: 'Reunião com cliente às 15:00',
-    time: '2 horas',
-    read: true,
-    type: 'system'
-  },
-  {
-    id: '4',
-    title: 'Nova mensagem',
-    message: 'Ana Costa enviou uma mensagem',
-    time: '1 dia',
-    read: true,
-    type: 'client'
-  }
-];
-
 export function NotificationsPopover({ children }: NotificationsPopoverProps) {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+  const { 
+    notifications, 
+    loading, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead 
+  } = useNotifications();
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -80,6 +33,28 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
         return <Users className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const formatTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { 
+        addSuffix: true, 
+        locale: ptBR 
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+    
+    // Handle navigation based on notification data
+    if (notification.data?.proposal_id) {
+      window.open(`/proposta/${notification.data.proposal_id}`, '_blank');
     }
   };
 
@@ -93,7 +68,7 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
               variant="destructive" 
               className="absolute -top-1 -right-1 w-5 h-5 rounded-full p-0 text-xs flex items-center justify-center"
             >
-              {unreadCount}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </div>
@@ -117,53 +92,67 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
         
         <ScrollArea className="h-80">
           <div className="p-2">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`p-3 rounded-lg mb-2 border cursor-pointer transition-colors ${
-                  notification.read 
-                    ? 'bg-muted/30 border-transparent' 
-                    : 'bg-card border-border hover:bg-muted/50'
-                }`}
-                onClick={() => markAsRead(notification.id)}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={`p-1.5 rounded-full ${
-                    notification.read ? 'bg-muted' : 'bg-primary/10'
-                  }`}>
-                    {getIcon(notification.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className={`font-medium text-sm ${
-                        notification.read ? 'text-muted-foreground' : 'text-foreground'
-                      }`}>
-                        {notification.title}
-                      </p>
-                      <span className="text-xs text-muted-foreground">
-                        {notification.time}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {notification.message}
-                    </p>
-                  </div>
-                  {!notification.read && (
-                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
-                  )}
-                </div>
+            {loading ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               </div>
-            ))}
+            ) : notifications.length === 0 ? (
+              <div className="text-center p-8 text-muted-foreground">
+                <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nenhuma notificação</p>
+              </div>
+            ) : (
+              notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`p-3 rounded-lg mb-2 border cursor-pointer transition-colors ${
+                    notification.read 
+                      ? 'bg-muted/30 border-transparent' 
+                      : 'bg-card border-border hover:bg-muted/50'
+                  }`}
+                  onClick={() => handleNotificationClick(notification)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`p-1.5 rounded-full ${
+                      notification.read ? 'bg-muted' : 'bg-primary/10'
+                    }`}>
+                      {getIcon(notification.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className={`font-medium text-sm ${
+                          notification.read ? 'text-muted-foreground' : 'text-foreground'
+                        }`}>
+                          {notification.title}
+                        </p>
+                        <span className="text-xs text-muted-foreground">
+                          {formatTime(notification.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {notification.message}
+                      </p>
+                    </div>
+                    {!notification.read && (
+                      <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </ScrollArea>
         
-        <Separator />
-        
-        <div className="p-2">
-          <Button variant="ghost" className="w-full text-sm h-8">
-            Ver todas as notificações
-          </Button>
-        </div>
+        {notifications.length > 0 && (
+          <>
+            <Separator />
+            <div className="p-2">
+              <Button variant="ghost" className="w-full text-sm h-8">
+                Ver todas as notificações
+              </Button>
+            </div>
+          </>
+        )}
       </PopoverContent>
     </Popover>
   );

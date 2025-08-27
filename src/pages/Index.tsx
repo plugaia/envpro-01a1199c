@@ -84,9 +84,29 @@ const Index = () => {
     setShowProposalForm(true);
   };
 
-  const handleSubmitProposal = () => {
+  const handleSubmitProposal = async () => {
     // Refresh proposals list after creating a new one
-    fetchProposals();
+    await fetchProposals();
+    
+    // Create notification for new proposal
+    if (user) {
+      try {
+        const { error } = await supabase.functions.invoke('create-notification', {
+          body: {
+            user_id: user.id,
+            title: 'Nova Proposta Criada',
+            message: 'Uma nova proposta foi criada com sucesso.',
+            type: 'proposal'
+          }
+        });
+
+        if (error) {
+          console.error('Error creating notification:', error);
+        }
+      } catch (error) {
+        console.error('Error sending notification:', error);
+      }
+    }
   };
 
   const handleSendEmail = async (proposal: Proposal) => {
@@ -169,6 +189,23 @@ Equipe LegalProp 📋⚖️`
         description: `A proposta de ${deletingProposal.clientName} foi removida com sucesso.`,
       });
 
+      // Create notification for deleted proposal
+      if (user) {
+        try {
+          await supabase.functions.invoke('create-notification', {
+            body: {
+              user_id: user.id,
+              title: 'Proposta Excluída',
+              message: `A proposta de ${deletingProposal.clientName} foi excluída.`,
+              type: 'proposal',
+              data: { client_name: deletingProposal.clientName }
+            }
+          });
+        } catch (notifError) {
+          console.error('Error creating notification:', notifError);
+        }
+      }
+
       // Refresh proposals list
       fetchProposals();
       setDeletingProposal(null);
@@ -182,10 +219,30 @@ Equipe LegalProp 📋⚖️`
     }
   };
 
-  const handleUpdateProposal = () => {
+  const handleUpdateProposal = async () => {
     // Refresh proposals list after update
-    fetchProposals();
+    await fetchProposals();
     setEditingProposal(null);
+    
+    // Create notification for updated proposal
+    if (user && editingProposal) {
+      try {
+        await supabase.functions.invoke('create-notification', {
+          body: {
+            user_id: user.id,
+            title: 'Proposta Atualizada',
+            message: `A proposta de ${editingProposal.clientName} foi atualizada com sucesso.`,
+            type: 'proposal',
+            data: { 
+              proposal_id: editingProposal.id,
+              client_name: editingProposal.clientName 
+            }
+          }
+        });
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+      }
+    }
   };
 
   // Filter proposals based on active filters
