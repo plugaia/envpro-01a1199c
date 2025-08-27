@@ -48,9 +48,12 @@ const ProposalView = () => {
         if (tokenData && tokenData.length > 0) {
           data = {
             ...tokenData[0],
-            client_phone: null, // Don't expose phone number in public access
-            client_email: null, // Don't expose email in public access
-            companies: { name: tokenData[0].company_name }
+            // Token-based access doesn't expose contact info for security
+            client_phone: null,
+            client_email: null,
+            companies: { name: tokenData[0].company_name },
+            // For token access, we'll handle verification differently
+            requiresVerification: true
           };
           // Set as verified since token is valid
           setIsVerified(true);
@@ -114,14 +117,40 @@ const ProposalView = () => {
     }
   };
 
-  const handlePhoneVerification = (digits: string) => {
-    // Only verify if client phone is available (not masked)
-    if (proposal && proposal.client_phone && proposal.client_phone !== '(***) ****-****' && proposal.client_phone.slice(-4) === digits) {
-      setIsVerified(true);
-      setShowVerification(false);
-      setVerificationError("");
-    } else {
-      setVerificationError("Dígitos incorretos. Tente novamente.");
+  const handlePhoneVerification = async (digits: string) => {
+    try {
+      // For token-based access, we need to verify against the actual phone number
+      // stored in client_contacts using a secure verification function
+      if (accessToken) {
+        // Create a verification function that checks last 4 digits without exposing full number
+        const { data: isValid, error } = await supabase
+          .rpc('verify_phone_digits', { 
+            p_proposal_id: proposalId,
+            p_last_digits: digits 
+          });
+
+        if (error) throw error;
+
+        if (isValid) {
+          setIsVerified(true);
+          setShowVerification(false);
+          setVerificationError("");
+        } else {
+          setVerificationError("Dígitos incorretos. Tente novamente.");
+        }
+      } else {
+        // For authenticated users with visible phone data
+        if (proposal && proposal.client_phone && proposal.client_phone !== '(***) ****-****' && proposal.client_phone.slice(-4) === digits) {
+          setIsVerified(true);
+          setShowVerification(false);
+          setVerificationError("");
+        } else {
+          setVerificationError("Dígitos incorretos. Tente novamente.");
+        }
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+      setVerificationError("Erro na verificação. Tente novamente.");
     }
   };
   
@@ -261,13 +290,13 @@ const ProposalView = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-      {/* Hero Section */}
-      <div className="hero-gradient text-white py-16 px-4">
+      {/* Hero Section - Improved mobile responsivity */}
+      <div className="hero-gradient text-white py-8 md:py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-4">
             Proposta de Antecipação
           </h1>
-          <p className="text-xl opacity-90 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl opacity-90 max-w-2xl mx-auto px-2">
             {proposal.description || "Seu futuro está nas suas mãos! Antecipe seus créditos judiciais e abra caminho para novas possibilidades."}
           </p>
         </div>
