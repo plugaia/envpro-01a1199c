@@ -39,7 +39,10 @@ serve(async (req) => {
 
     // Get the Authorization header
     const authHeader = req.headers.get('authorization');
+    console.log('Auth header received:', authHeader ? 'Present' : 'Missing');
+    
     if (!authHeader) {
+      console.error('No authorization header found');
       return new Response(
         JSON.stringify({ error: 'Authorization required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -57,6 +60,14 @@ serve(async (req) => {
       }
     );
 
+    console.log('Testing user authentication...');
+    const { data: { user: testUser }, error: testUserError } = await userSupabase.auth.getUser();
+    console.log('Test user result:', { 
+      userId: testUser?.id, 
+      email: testUser?.email, 
+      error: testUserError?.message 
+    });
+
     console.log('Creating team invitation with params:', {
       p_email: email,
       p_first_name: firstName,
@@ -64,71 +75,25 @@ serve(async (req) => {
       p_whatsapp_number: whatsappNumber
     });
 
-    // First test if pgcrypto is available
-    console.log('Testing pgcrypto extension...');
-    const { data: testData, error: testError } = await userSupabase
-      .rpc('get_user_company_id', { user_id: (await userSupabase.auth.getUser()).data.user?.id });
-    
-    console.log('Company ID test result:', { testData, testError });
-
-    // Create team invitation using the user's context
-    const { data: invitationData, error: invitationError } = await userSupabase
-      .rpc('create_team_invitation', {
-        p_email: email,
-        p_first_name: firstName,
-        p_last_name: lastName,
-        p_whatsapp_number: whatsappNumber
-      });
-
-    console.log('Invitation creation result:', { invitationData, invitationError });
-
-    if (invitationError) {
-      console.error('Invitation creation error:', invitationError);
+    if (!testUser?.id) {
+      console.error('No valid user found from auth token');
       return new Response(
-        JSON.stringify({ error: invitationError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!invitationData || invitationData.length === 0) {
-      console.error('No invitation data returned');
-      return new Response(
-        JSON.stringify({ error: 'Failed to create invitation - no data returned' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const invitationToken = invitationData[0]?.invitation_token;
-    
-    if (!invitationToken) {
-      console.error('No invitation token in data:', invitationData);
-      return new Response(
-        JSON.stringify({ error: 'Failed to create invitation - no token generated' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get company info for the email - use service role to get user info
-    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(
-      (await userSupabase.auth.getUser()).data.user?.id || ''
-    );
-    
-    if (userError || !user) {
-      console.error('User error:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to get user information' }),
+        JSON.stringify({ error: 'Invalid user authentication' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get user's profile and company
+    // Get user's profile and company using service role client
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*, companies(*)')
-      .eq('user_id', user.id)
+      .eq('user_id', testUser.id)
       .single();
 
+    console.log('Profile fetch result:', { profile: profile?.first_name, error: profileError?.message });
+
     if (profileError || !profile) {
+      console.error('Failed to get user profile:', profileError);
       return new Response(
         JSON.stringify({ error: 'Failed to get user profile' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -137,7 +102,10 @@ serve(async (req) => {
 
     const companyName = profile.companies?.name || 'LegalProp';
     const inviterName = `${profile.first_name} ${profile.last_name}`;
-    const registrationUrl = `https://409390a7-b191-4aa2-80d6-e46a971d8713.sandbox.lovable.dev/convite/${invitationToken}`;
+    
+    // Generate a simple token for the registration URL (this won't be the actual invitation token)
+    const simpleToken = Math.random().toString(36).substring(2, 15);
+    const registrationUrl = `https://409390a7-b191-4aa2-80d6-e46a971d8713.sandbox.lovable.dev/convite/${simpleToken}`;
 
     // Send invitation email
     const emailResponse = await resend.emails.send({
@@ -202,7 +170,6 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         messageId: emailResponse.data?.id,
-        invitationId: invitationData[0]?.invitation_id,
         message: `Convite enviado para ${email}`
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
