@@ -132,40 +132,57 @@ const Index = () => {
     }
   };
 
-  const handleSendWhatsApp = (proposal: Proposal) => {
-    console.log('Proposal object:', proposal);
-    console.log('Client phone:', proposal.clientPhone);
-    
-    // Create WhatsApp message with proposal link using client's WhatsApp number
-    const message = encodeURIComponent(
-      `Olá ${proposal.clientName}! 
+  const handleSendWhatsApp = async (proposal: Proposal) => {
+    try {
+      console.log('Proposal object:', proposal);
+      console.log('Client phone:', proposal.clientPhone);
+      
+      // Generate secure access token
+      const { data: tokenData, error } = await supabase
+        .rpc('create_proposal_access_token', { p_proposal_id: proposal.id });
+      
+      if (error) throw error;
+      
+      const proposalUrl = `${window.location.origin}/proposta/${proposal.id}?token=${tokenData}`;
+      
+      // Create WhatsApp message with proposal link using client's WhatsApp number
+      const message = encodeURIComponent(
+        `Olá ${proposal.clientName}! 
 
 Temos uma proposta de antecipação de crédito judicial de *R$ ${proposal.proposalValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}* para seu processo.
 
 Para visualizar os detalhes e aceitar a proposta, clique no link:
-${window.location.origin}/proposta/${proposal.id}
+${proposalUrl}
 
 Equipe LegalProp 📋⚖️`
-    );
-    
-    // Use client's phone number for WhatsApp
-    const phoneNumber = proposal.clientPhone?.replace(/[^\d]/g, '') || "";
-    console.log('Formatted phone number:', phoneNumber);
-    
-    const whatsappUrl = phoneNumber 
-      ? `https://wa.me/${phoneNumber}?text=${message}`
-      : `https://wa.me/?text=${message}`;
-    
-    console.log('WhatsApp URL:', whatsappUrl);
-    
-    window.open(whatsappUrl, '_blank');
-    
-    toast({
-      title: "WhatsApp aberto", 
-      description: phoneNumber 
-        ? `Conversa iniciada com ${proposal.clientName}`
-        : `Mensagem preparada para ${proposal.clientName}`,
-    });
+      );
+      
+      // Use client's phone number for WhatsApp
+      const phoneNumber = proposal.clientPhone?.replace(/[^\d]/g, '') || "";
+      console.log('Formatted phone number:', phoneNumber);
+      
+      const whatsappUrl = phoneNumber 
+        ? `https://wa.me/${phoneNumber}?text=${message}`
+        : `https://wa.me/?text=${message}`;
+      
+      console.log('WhatsApp URL:', whatsappUrl);
+      
+      window.open(whatsappUrl, '_blank');
+
+      toast({
+        title: "WhatsApp aberto", 
+        description: phoneNumber 
+          ? `Conversa iniciada com ${proposal.clientName}`
+          : `Mensagem preparada para ${proposal.clientName}`,
+      });
+    } catch (error) {
+      console.error('Error generating WhatsApp link:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível gerar o link seguro.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleViewProposal = (proposal: Proposal) => {

@@ -60,20 +60,35 @@ export function ProposalCard({ proposal, onSendEmail, onSendWhatsApp, onView, on
     }).format(value);
   };
 
-  const handleShareLink = () => {
-    const shareUrl = `${window.location.origin}/proposta/${proposal.id}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      toast({
-        title: "Link copiado!",
-        description: "O link da proposta foi copiado para a área de transferência.",
+  const handleShareLink = async () => {
+    try {
+      // Generate secure access token
+      const { data: tokenData, error } = await supabase
+        .rpc('create_proposal_access_token', { p_proposal_id: proposal.id });
+      
+      if (error) throw error;
+      
+      const shareUrl = `${window.location.origin}/proposta/${proposal.id}?token=${tokenData}`;
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast({
+          title: "Link copiado!",
+          description: "O link seguro da proposta foi copiado para a área de transferência.",
+        });
+      }).catch(() => {
+        toast({
+          title: "Erro ao copiar",
+          description: "Não foi possível copiar o link. Tente novamente.",
+          variant: "destructive",
+        });
       });
-    }).catch(() => {
+    } catch (error) {
+      console.error('Error generating share link:', error);
       toast({
-        title: "Erro ao copiar",
-        description: "Não foi possível copiar o link. Tente novamente.",
+        title: "Erro",
+        description: "Não foi possível gerar o link seguro.",
         variant: "destructive",
       });
-    });
+    }
   };
 
   const handleSendEmail = async (proposal: Proposal) => {

@@ -21,6 +21,10 @@ const ProposalView = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationError, setVerificationError] = useState("");
   
+  // Check if this is a token-based access (URL contains token parameter)
+  const urlParams = new URLSearchParams(window.location.search);
+  const accessToken = urlParams.get('token');
+  
   useEffect(() => {
     if (proposalId) {
       fetchProposal();
@@ -30,12 +34,42 @@ const ProposalView = () => {
   const fetchProposal = async () => {
     try {
       console.log('Fetching proposal with ID:', proposalId);
+      console.log('Access token:', accessToken);
       
-      const { data, error } = await supabase
-        .from('proposals')
-        .select('*, companies(name)')
-        .eq('id', proposalId)
-        .single();
+      let data, error;
+      
+      if (accessToken) {
+        // Use token-based access for public links
+        const { data: tokenData, error: tokenError } = await supabase
+          .rpc('get_proposal_by_token', { access_token: accessToken });
+          
+        if (tokenError) throw tokenError;
+        
+        if (tokenData && tokenData.length > 0) {
+          data = {
+            ...tokenData[0],
+            client_phone: null, // Don't expose phone number in public access
+            client_email: null, // Don't expose email in public access
+            companies: { name: tokenData[0].company_name }
+          };
+          // Set as verified since token is valid
+          setIsVerified(true);
+        } else {
+          throw new Error('Token inválido ou expirado');
+        }
+      } else if (user) {
+        // Authenticated user access
+        const response = await supabase
+          .from('proposals')
+          .select('*, companies(name)')
+          .eq('id', proposalId)
+          .single();
+          
+        data = response.data;
+        error = response.error;
+      } else {
+        throw new Error('Acesso não autorizado');
+      }
 
       console.log('Proposal data:', data);
       console.log('Proposal error:', error);
@@ -45,10 +79,6 @@ const ProposalView = () => {
       setProposal(data);
       setStatus(data.status as 'pendente' | 'aprovada' | 'rejeitada');
       
-      // If user is not authenticated, show verification modal
-      if (!user) {
-        setShowVerification(true);
-      }
     } catch (error) {
       console.error('Error fetching proposal:', error);
       toast({
@@ -87,8 +117,8 @@ const ProposalView = () => {
     return <Navigate to="/404" replace />;
   }
 
-  // Show verification modal for non-authenticated users
-  if (!user && !isVerified) {
+  // Show verification modal for non-authenticated users without valid token
+  if (!user && !isVerified && !accessToken) {
     return (
       <>
         <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center">

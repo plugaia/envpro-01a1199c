@@ -145,6 +145,38 @@ export type Database = {
           },
         ]
       }
+      proposal_tokens: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          proposal_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          proposal_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          proposal_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_tokens_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposals: {
         Row: {
           assignee: string | null
@@ -227,6 +259,26 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      create_proposal_access_token: {
+        Args: { p_proposal_id: string }
+        Returns: string
+      }
+      get_proposal_by_token: {
+        Args: { access_token: string }
+        Returns: {
+          cedible_value: number
+          client_name: string
+          company_name: string
+          created_at: string
+          id: string
+          organization_name: string
+          process_number: string
+          proposal_value: number
+          receiver_type: string
+          status: string
+          valid_until: string
+        }[]
       }
       get_user_company_id: {
         Args: { user_id: string }

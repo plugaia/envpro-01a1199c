@@ -50,7 +50,19 @@ serve(async (req) => {
       );
     }
 
-    const proposalUrl = `https://409390a7-b191-4aa2-80d6-e46a971d8713.sandbox.lovable.dev/proposta/${proposalId}`;
+    // Generate secure access token for the proposal
+    const { data: tokenData, error: tokenError } = await supabase
+      .rpc('create_proposal_access_token', { p_proposal_id: proposalId });
+    
+    if (tokenError) {
+      console.error('Token generation error:', tokenError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to generate secure access token' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const proposalUrl = `https://409390a7-b191-4aa2-80d6-e46a971d8713.sandbox.lovable.dev/proposta/${proposalId}?token=${tokenData}`;
     const companyName = proposal.companies?.name || 'Empresa';
     
     const formatCurrency = (value: number) => {
