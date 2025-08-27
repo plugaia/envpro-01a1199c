@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotifications } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NotificationsPopoverProps {
   children: React.ReactNode;
@@ -81,7 +82,22 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={markAllAsRead}
+                onClick={async () => {
+                  try {
+                    await markAllAsRead();
+                    // Log audit event
+                    try {
+                      await supabase.rpc('create_audit_log', {
+                        p_action_type: 'NOTIFICATIONS_MARKED_READ',
+                        p_new_data: { action: 'mark_all_read', count: unreadCount }
+                      });
+                    } catch (auditError) {
+                      console.error('Audit log error:', auditError);
+                    }
+                  } catch (error) {
+                    console.error('Error marking notifications as read:', error);
+                  }
+                }}
                 className="text-xs h-6"
               >
                 Marcar todas como lidas
@@ -147,7 +163,13 @@ export function NotificationsPopover({ children }: NotificationsPopoverProps) {
           <>
             <Separator />
             <div className="p-2">
-              <Button variant="ghost" className="w-full text-sm h-8">
+              <Button 
+                variant="ghost" 
+                className="w-full text-sm h-8"
+                onClick={() => {
+                  window.open('/notificacoes', '_blank');
+                }}
+              >
                 Ver todas as notificações
               </Button>
             </div>

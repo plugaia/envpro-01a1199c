@@ -345,7 +345,27 @@ export function UserSettings() {
                       Cancelar
                     </Button>
                     <Button 
-                      onClick={handleInviteUser}
+                      onClick={async () => {
+                        setInviteLoading(true);
+                        try {
+                          await handleInviteUser();
+                          // Log audit event
+                          try {
+                            await supabase.rpc('create_audit_log', {
+                              p_action_type: 'USER_INVITED',
+                              p_new_data: { 
+                                email: inviteForm.email,
+                                name: `${inviteForm.firstName} ${inviteForm.lastName}`,
+                                action: 'user_invitation_sent'
+                              }
+                            });
+                          } catch (auditError) {
+                            console.error('Audit log error:', auditError);
+                          }
+                        } finally {
+                          setInviteLoading(false);
+                        }
+                      }}
                       disabled={inviteLoading}
                       className="flex-1"
                     >
@@ -480,7 +500,27 @@ export function UserSettings() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleToggleUserStatus(user.id, user.isActive)}
+                            onClick={async () => {
+                              try {
+                                await handleToggleUserStatus(user.id, user.isActive);
+                                // Log audit event
+                                try {
+                                  await supabase.rpc('create_audit_log', {
+                                    p_action_type: user.isActive ? 'USER_DEACTIVATED' : 'USER_ACTIVATED',
+                                    p_table_name: 'profiles',
+                                    p_record_id: user.id,
+                                    p_new_data: { 
+                                      user_name: `${user.firstName} ${user.lastName}`,
+                                      action: user.isActive ? 'deactivated' : 'activated'
+                                    }
+                                  });
+                                } catch (auditError) {
+                                  console.error('Audit log error:', auditError);
+                                }
+                              } catch (error) {
+                                console.error('Error toggling user status:', error);
+                              }
+                            }}
                             disabled={user.id === currentUser?.id}
                             className="h-8 w-8 p-0"
                             title={user.isActive ? "Desativar" : "Ativar"}

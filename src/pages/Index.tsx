@@ -114,7 +114,10 @@ const Index = () => {
 
     try {
       const response = await supabase.functions.invoke('send-proposal-email', {
-        body: { proposalId: proposal.id }
+        body: { 
+          proposalId: proposal.id,
+          recipientEmail: proposal.clientEmail
+        }
       });
 
       if (response.error) throw response.error;
@@ -123,6 +126,18 @@ const Index = () => {
         title: "Email enviado!",
         description: `Proposta enviada para ${proposal.clientEmail}`,
       });
+
+      // Log audit event
+      try {
+        await supabase.rpc('create_audit_log', {
+          p_action_type: 'EMAIL_SENT',
+          p_table_name: 'proposals',
+          p_record_id: proposal.id,
+          p_new_data: { recipient_email: proposal.clientEmail, action: 'email_sent' }
+        });
+      } catch (auditError) {
+        console.error('Audit log error:', auditError);
+      }
     } catch (error) {
       console.error('Error sending email:', error);
       toast({
@@ -186,6 +201,18 @@ Equipe EnvPRO 📋⚖️`
           ? `Conversa iniciada com ${proposal.clientName}`
           : `Mensagem preparada para ${proposal.clientName}`,
       });
+
+      // Log audit event
+      try {
+        await supabase.rpc('create_audit_log', {
+          p_action_type: 'WHATSAPP_SENT',
+          p_table_name: 'proposals', 
+          p_record_id: proposal.id,
+          p_new_data: { phone_number: phoneNumber, action: 'whatsapp_sent' }
+        });
+      } catch (auditError) {
+        console.error('Audit log error:', auditError);
+      }
     } catch (error) {
       console.error('Error generating WhatsApp link:', error);
       toast({

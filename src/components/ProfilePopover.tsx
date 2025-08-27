@@ -43,15 +43,27 @@ export function ProfilePopover({ children, onSignOut }: ProfilePopoverProps) {
         <Separator />
         
         <div className="p-2">
-          <Button variant="ghost" className="w-full justify-start text-sm h-8">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-sm h-8"
+            onClick={() => window.location.href = '/configuracoes?tab=profile'}
+          >
             <User className="w-4 h-4 mr-2" />
             Meu Perfil
           </Button>
-          <Button variant="ghost" className="w-full justify-start text-sm h-8">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-sm h-8"
+            onClick={() => window.location.href = '/configuracoes'}
+          >
             <Settings className="w-4 h-4 mr-2" />
             Configurações
           </Button>
-          <Button variant="ghost" className="w-full justify-start text-sm h-8">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-sm h-8"
+            onClick={() => window.location.href = '/configuracoes?tab=security'}
+          >
             <Shield className="w-4 h-4 mr-2" />
             Privacidade
           </Button>

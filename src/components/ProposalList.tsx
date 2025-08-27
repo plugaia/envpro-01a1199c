@@ -79,7 +79,10 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView, o
 
     try {
       const response = await supabase.functions.invoke('send-proposal-email', {
-        body: { proposalId: proposal.id }
+        body: { 
+          proposalId: proposal.id,
+          recipientEmail: proposal.clientEmail
+        }
       });
 
       if (response.error) throw response.error;
@@ -88,6 +91,18 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView, o
         title: "Email enviado!",
         description: `Proposta enviada para ${proposal.clientEmail}`,
       });
+
+      // Log audit event
+      try {
+        await supabase.rpc('create_audit_log', {
+          p_action_type: 'EMAIL_SENT',
+          p_table_name: 'proposals',
+          p_record_id: proposal.id,
+          p_new_data: { recipient_email: proposal.clientEmail, action: 'email_sent' }
+        });
+      } catch (auditError) {
+        console.error('Audit log error:', auditError);
+      }
     } catch (error) {
       console.error('Error sending email:', error);
       toast({
@@ -239,25 +254,117 @@ export function ProposalList({ proposals, onSendEmail, onSendWhatsApp, onView, o
                         >
                           <Mail className="w-3 h-3" />
                         </Button>
+                         <Button
+                           size="sm"
+                           variant="ghost"
+                           onClick={async () => {
+                             try {
+                               // Generate secure access token
+                               const { data: tokenData, error } = await supabase
+                                 .rpc('create_proposal_access_token', { p_proposal_id: proposal.id });
+                               
+                               if (error) throw error;
+                               
+                               const proposalUrl = `${window.location.origin}/proposta/${proposal.id}?token=${tokenData}`;
+                               
+                               // Create WhatsApp message with proposal link
+                               const message = encodeURIComponent(
+                                 `Olá ${proposal.clientName}! 
+
+Temos uma proposta de antecipação de crédito judicial de *R$ ${proposal.proposalValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}* para seu processo.
+
+Para visualizar os detalhes e aceitar a proposta, clique no link:
+${proposalUrl}
+
+Equipe EnvPRO 📋⚖️`
+                               );
+                               
+                               // Use client's phone number for WhatsApp
+                               const phoneNumber = proposal.clientPhone?.replace(/[^\d]/g, '') || "";
+                               
+                               const whatsappUrl = phoneNumber 
+                                 ? `https://wa.me/${phoneNumber}?text=${message}`
+                                 : `https://wa.me/?text=${message}`;
+                               
+                               window.open(whatsappUrl, '_blank');
+
+                               toast({
+                                 title: "WhatsApp aberto", 
+                                 description: phoneNumber 
+                                   ? `Conversa iniciada com ${proposal.clientName}`
+                                   : `Mensagem preparada para ${proposal.clientName}`,
+                               });
+
+                               // Log audit event
+                               try {
+                                 await supabase.rpc('create_audit_log', {
+                                   p_action_type: 'WHATSAPP_SENT',
+                                   p_table_name: 'proposals',
+                                   p_record_id: proposal.id,
+                                   p_new_data: { phone_number: phoneNumber, action: 'whatsapp_sent' }
+                                 });
+                               } catch (auditError) {
+                                 console.error('Audit log error:', auditError);
+                               }
+                             } catch (error) {
+                               console.error('Error generating WhatsApp link:', error);
+                               toast({
+                                 title: "Erro",
+                                 description: "Não foi possível gerar o link seguro.",
+                                 variant: "destructive",
+                               });
+                             }
+                           }}
+                           className="h-7 w-7 p-0"
+                           title="Enviar por WhatsApp"
+                           disabled={!proposal.canViewClientDetails}
+                         >
+                           <MessageCircle className="w-3 h-3" />
+                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => onSendWhatsApp(proposal)}
+                          onClick={async () => {
+                            try {
+                              // Generate secure access token
+                              const { data: tokenData, error } = await supabase
+                                .rpc('create_proposal_access_token', { p_proposal_id: proposal.id });
+                              
+                              if (error) throw error;
+                              
+                              const shareUrl = `${window.location.origin}/proposta/${proposal.id}?token=${tokenData}`;
+                              await navigator.clipboard.writeText(shareUrl);
+                              
+                              toast({
+                                title: "Link copiado!",
+                                description: "O link seguro da proposta foi copiado para a área de transferência.",
+                              });
+
+                              // Log audit event
+                              try {
+                                await supabase.rpc('create_audit_log', {
+                                  p_action_type: 'SHARE_LINK_GENERATED',
+                                  p_table_name: 'proposals',
+                                  p_record_id: proposal.id,
+                                  p_new_data: { action: 'share_link_generated' }
+                                });
+                              } catch (auditError) {
+                                console.error('Audit log error:', auditError);
+                              }
+                            } catch (error) {
+                              console.error('Error generating share link:', error);
+                              toast({
+                                title: "Erro ao copiar",
+                                description: "Não foi possível copiar o link. Tente novamente.",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
                           className="h-7 w-7 p-0"
-                          title="Enviar por WhatsApp"
-                          disabled={!proposal.canViewClientDetails}
+                          title="Compartilhar Link"
                         >
-                          <MessageCircle className="w-3 h-3" />
+                          <Share className="w-3 h-3" />
                         </Button>
-                       <Button
-                         size="sm"
-                         variant="ghost"
-                         onClick={() => handleShareLink(proposal)}
-                         className="h-7 w-7 p-0"
-                         title="Compartilhar Link"
-                       >
-                         <Share className="w-3 h-3" />
-                       </Button>
                        <Button
                          size="sm"
                          variant="ghost"

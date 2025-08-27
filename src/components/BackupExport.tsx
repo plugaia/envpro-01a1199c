@@ -110,7 +110,26 @@ export function BackupExport() {
         
         <div className="pt-4 border-t">
           <Button 
-            onClick={handleExportData}
+            onClick={async () => {
+              setIsExporting(true);
+              try {
+                await handleExportData();
+                // Log audit event for data export
+                try {
+                  await supabase.rpc('create_audit_log', {
+                    p_action_type: 'DATA_EXPORTED',
+                    p_new_data: { 
+                      export_date: new Date().toISOString(),
+                      action: 'company_data_exported'
+                    }
+                  });
+                } catch (auditError) {
+                  console.error('Audit log error:', auditError);
+                }
+              } finally {
+                setIsExporting(false);
+              }
+            }}
             disabled={isExporting}
             className="w-full md:w-auto"
           >
