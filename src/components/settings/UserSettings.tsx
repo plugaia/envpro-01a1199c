@@ -117,6 +117,7 @@ export function UserSettings() {
       
       console.log('Starting invitation process...');
       console.log('Current user:', currentUser);
+      console.log('User ID:', currentUser?.id);
       
       // Test admin status first
       const { data: adminCheck, error: adminError } = await supabase
@@ -124,13 +125,21 @@ export function UserSettings() {
       
       console.log('Admin check result:', { adminCheck, adminError });
       
+      // Also check user_roles directly
+      const { data: userRoles, error: userRolesError } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', currentUser?.id);
+        
+      console.log('User roles direct check:', { userRoles, userRolesError });
+      
       if (adminError) {
         console.error('Admin check error:', adminError);
         throw new Error('Erro ao verificar permissões de administrador');
       }
       
       if (!adminCheck) {
-        throw new Error('Você precisa ter permissões de administrador para enviar convites');
+        throw new Error('Você precisa ter permissões de administrador para enviar convites. User ID: ' + currentUser?.id);
       }
 
       // Create team invitation
