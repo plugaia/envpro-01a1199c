@@ -20,8 +20,6 @@ const ProposalView = () => {
   const [proposal, setProposal] = useState<any>(null);
   const [status, setStatus] = useState<'pendente' | 'aprovada' | 'rejeitada'>('pendente');
   const [loading, setLoading] = useState(true);
-  const [isVerified, setIsVerified] = useState(!!user); // Authenticated users skip verification
-  const [showVerification, setShowVerification] = useState(false);
   const [verificationError, setVerificationError] = useState("");
   const [lawyerInfo, setLawyerInfo] = useState<any>(null);
   const [showNotFound, setShowNotFound] = useState(false);
@@ -29,6 +27,9 @@ const ProposalView = () => {
   // Check if this is a token-based access (URL contains token parameter)
   const urlParams = new URLSearchParams(window.location.search);
   const accessToken = urlParams.get('token');
+  
+  const [isVerified, setIsVerified] = useState(!!user); // Authenticated users skip verification
+  const [showVerification, setShowVerification] = useState(!user && !!accessToken);
   
   useEffect(() => {
     if (proposalId) {
@@ -60,8 +61,9 @@ const ProposalView = () => {
             // For token access, we'll handle verification differently
             requiresVerification: true
           };
-          // Set as verified since token is valid
-          setIsVerified(true);
+          // Token is valid, but user still needs to verify phone digits
+          setIsVerified(false);
+          setShowVerification(true);
         } else {
           throw new Error('Token inválido ou expirado');
         }
@@ -147,19 +149,36 @@ const ProposalView = () => {
     }
   };
 
-  const handlePhoneVerification = (digits: string) => {
-    // For token-based access, we'll do a simplified verification
-    // In a real implementation, you would verify against the actual phone
-    if (digits.length === 4 && /^\d{4}$/.test(digits)) {
-      setIsVerified(true);
-      setShowVerification(false);
-      setVerificationError("");
-      toast({
-        title: "Verificação concluída",
-        description: "Acesso liberado para visualizar a proposta.",
-      });
-    } else {
+  const handlePhoneVerification = async (digits: string) => {
+    if (digits.length !== 4 || !/^\d{4}$/.test(digits)) {
       setVerificationError("Digite exatamente 4 dígitos.");
+      return;
+    }
+
+    try {
+      // Verify the last 4 digits of the client's phone using Supabase function
+      const { data: isValid, error } = await supabase
+        .rpc('verify_phone_digits', { 
+          p_proposal_id: proposalId, 
+          p_last_digits: digits 
+        });
+
+      if (error) throw error;
+
+      if (isValid) {
+        setIsVerified(true);
+        setShowVerification(false);
+        setVerificationError("");
+        toast({
+          title: "Verificação concluída",
+          description: "Acesso liberado para visualizar a proposta.",
+        });
+      } else {
+        setVerificationError("Os últimos 4 dígitos do seu celular não conferem.");
+      }
+    } catch (error) {
+      console.error('Error verifying phone digits:', error);
+      setVerificationError("Erro na verificação. Tente novamente.");
     }
   };
   
@@ -184,8 +203,8 @@ const ProposalView = () => {
     return <NotFound />;
   }
 
-  // Show verification modal for non-authenticated users without valid token
-  if (!user && !isVerified && !accessToken) {
+  // Show verification modal for non-authenticated users
+  if (!user && !isVerified) {
     return (
       <>
         <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center">
@@ -193,21 +212,22 @@ const ProposalView = () => {
             <CardContent className="p-6 text-center">
               <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">Proposta Protegida</h2>
-              <p className="text-muted-foreground">
-                Esta proposta requer verificação para garantir sua segurança.
+              <p className="text-muted-foreground mb-4">
+                Para acessar esta proposta, digite os últimos 4 dígitos do seu celular cadastrado.
               </p>
+              <Button onClick={() => setShowVerification(true)} className="w-full">
+                Inserir Senha
+              </Button>
             </CardContent>
           </Card>
         </div>
-        {proposal?.client_phone && proposal.client_phone !== '(***) ****-****' && (
-          <PhoneVerificationModal
-            isOpen={showVerification}
-            clientPhone={proposal.client_phone}
-            onVerify={handlePhoneVerification}
-            onClose={() => setShowVerification(false)}
-            error={verificationError}
-          />
-        )}
+        <PhoneVerificationModal
+          isOpen={showVerification}
+          clientPhone="****-****" // Don't expose phone number
+          onVerify={handlePhoneVerification}
+          onClose={() => setShowVerification(false)}
+          error={verificationError}
+        />
       </>
     );
   }
