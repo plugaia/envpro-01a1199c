@@ -41,29 +41,48 @@ serve(async (req) => {
       );
     }
 
-    // Create company first
-    const { data: company, error: companyError } = await supabase
+    // Check if company with CNPJ already exists
+    const { data: existingCompany } = await supabase
       .from('companies')
-      .insert([
-        {
-          name: userData.companyName,
-          cnpj: userData.cnpj,
-          responsible_phone: userData.responsiblePhone,
-          responsible_email: userData.responsibleEmail,
-        }
-      ])
-      .select()
+      .select('id')
+      .eq('cnpj', userData.cnpj)
       .single();
 
-    if (companyError) {
-      console.error('Company creation error:', companyError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to create company', details: companyError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    let company;
+    if (existingCompany) {
+      // Use existing company
+      company = existingCompany;
+    } else {
+      // Create new company
+      const { data: newCompany, error: companyError } = await supabase
+        .from('companies')
+        .insert([
+          {
+            name: userData.companyName,
+            cnpj: userData.cnpj,
+            responsible_phone: userData.responsiblePhone,
+            responsible_email: userData.responsibleEmail,
+          }
+        ])
+        .select()
+        .single();
+
+      if (companyError) {
+        console.error('Company creation error:', companyError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create company', details: companyError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      company = newCompany;
     }
 
-    // Create user profile with admin role (first user is always admin)
+
+    // Determine user role - admin if first user of new company, collaborator if joining existing company
+    const userRole = existingCompany ? 'collaborator' : 'admin';
+
+    // Create user profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .insert([
@@ -72,7 +91,7 @@ serve(async (req) => {
           company_id: company.id,
           first_name: userData.firstName,
           last_name: userData.lastName,
-          role: 'admin', // First user is always admin
+          role: userRole,
         }
       ])
       .select()
