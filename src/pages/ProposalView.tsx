@@ -465,53 +465,54 @@ const ProposalView = () => {
           </CardContent>
         </Card>
 
-        {/* Lawyer Information */}
-        {lawyerInfo && (
-          <Card className="mt-6">
-            <CardHeader>
-              <h3 className="text-lg font-semibold flex items-center gap-2">
+        {/* Footer with Lawyer Information */}
+        <div className="mt-8 bg-muted/30 rounded-lg p-6">
+          <div className="text-center text-sm text-muted-foreground mb-6">
+            <p className="flex items-center justify-center gap-2 mb-2">
+              <Calendar className="w-4 h-4" />
+              Válida até: {formatDate(proposal.valid_until)}
+            </p>
+          </div>
+
+          {/* Lawyer Information in Footer */}
+          {lawyerInfo && (
+            <div className="border-t border-border pt-6">
+              <h3 className="text-center text-lg font-semibold mb-4 text-foreground flex items-center justify-center gap-2">
                 <User className="w-5 h-5 text-primary" />
                 Advogado Responsável
               </h3>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-                <Avatar className="w-16 h-16">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
+                <Avatar className="w-20 h-20">
                   <AvatarImage src={lawyerInfo.avatar_url} alt="Foto do advogado" />
-                  <AvatarFallback className="text-lg">
+                  <AvatarFallback className="text-xl font-semibold">
                     {lawyerInfo.first_name?.[0]?.toUpperCase() || 'A'}
                     {lawyerInfo.last_name?.[0]?.toUpperCase() || ''}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  <h4 className="font-semibold mb-2">
+                <div className="text-center sm:text-left">
+                  <h4 className="font-bold text-lg text-foreground mb-3">
                     {lawyerInfo.first_name} {lawyerInfo.last_name}
                   </h4>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                      <Mail className="w-4 h-4 text-primary" />
                       <span>{lawyerInfo.email}</span>
                     </div>
                     {lawyerInfo.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
+                      <div className="flex items-center justify-center sm:justify-start gap-2">
+                        <Phone className="w-4 h-4 text-primary" />
                         <span>{lawyerInfo.phone}</span>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
 
-        {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground">
-          <p className="flex items-center justify-center gap-2 mb-2">
-            <Calendar className="w-4 h-4" />
-            Válida até: {formatDate(proposal.valid_until)}
-          </p>
-          <p>© 2025 {proposal.companies?.name || 'LegalProp'} - Plataforma de Propostas Jurídicas</p>
+          <div className="text-center text-sm text-muted-foreground mt-6 pt-4 border-t border-border">
+            <p>© 2025 {proposal.companies?.name || 'LegalProp'} - Plataforma de Propostas Jurídicas</p>
+          </div>
         </div>
       </div>
     </div>
