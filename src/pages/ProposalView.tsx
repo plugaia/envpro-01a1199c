@@ -113,7 +113,6 @@ const ProposalView = () => {
       setStatus(data.status as 'pendente' | 'aprovada' | 'rejeitada');
       
       // Fetch lawyer information for all proposals (both token and authenticated access)
-      console.log('Proposal data before lawyer fetch:', data);
       await fetchLawyerInfo();
       
     } catch (error) {
@@ -131,13 +130,9 @@ const ProposalView = () => {
 
   const fetchLawyerInfo = async () => {
     try {
-      console.log('Fetching lawyer info for proposal:', proposalId);
       // Use RPC function to get lawyer information
       const { data: lawyerData, error: lawyerError } = await supabase
         .rpc('get_lawyer_info', { p_proposal_id: proposalId });
-
-      console.log('Lawyer data received:', lawyerData);
-      console.log('Lawyer error:', lawyerError);
 
       if (lawyerError) {
         console.error('Error fetching lawyer info:', lawyerError);
@@ -145,10 +140,7 @@ const ProposalView = () => {
       }
 
       if (lawyerData && lawyerData.length > 0) {
-        console.log('Setting lawyer info:', lawyerData[0]);
         setLawyerInfo(lawyerData[0]);
-      } else {
-        console.log('No lawyer data found');
       }
     } catch (error) {
       console.error('Error in fetchLawyerInfo:', error);
