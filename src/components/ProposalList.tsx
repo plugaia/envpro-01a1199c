@@ -279,12 +279,12 @@ ${proposalUrl}
 Equipe EnvPRO 📋⚖️`
                                );
                                
-                               // Use client's phone number for WhatsApp
-                               const phoneNumber = proposal.clientPhone?.replace(/[^\d]/g, '') || "";
-                               
-                               const whatsappUrl = phoneNumber 
-                                 ? `https://wa.me/${phoneNumber}?text=${message}`
-                                 : `https://wa.me/?text=${message}`;
+                                // Use client's phone number for WhatsApp
+                                const phoneNumber = proposal.clientPhone?.replace(/[^\d]/g, '') || "";
+                                
+                                const whatsappUrl = phoneNumber 
+                                  ? `https://wa.me/+55${phoneNumber}?text=${message}`
+                                  : `https://wa.me/?text=${message}`;
                                
                                window.open(whatsappUrl, '_blank');
 
