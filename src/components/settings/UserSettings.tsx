@@ -119,11 +119,25 @@ export function UserSettings() {
       console.log('Current user:', currentUser);
       console.log('User ID:', currentUser?.id);
       
+      // Check if user is authenticated
+      if (!currentUser || !currentUser.id) {
+        throw new Error('Usuário não autenticado');
+      }
+      
       // Test admin status using the correct function
       const { data: adminCheck, error: adminError } = await supabase
         .rpc('is_admin', { user_id: currentUser?.id });
       
       console.log('Admin check result:', { adminCheck, adminError });
+      
+      // Also check profile directly
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, is_active')
+        .eq('user_id', currentUser.id)
+        .single();
+        
+      console.log('Profile check:', { profileData, profileError });
       
       if (adminError) {
         console.error('Admin check error:', adminError);
