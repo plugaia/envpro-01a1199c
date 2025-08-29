@@ -2,16 +2,14 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Mail, MessageSquare, FileText, CheckCircle, ArrowRight } from 'lucide-react';
-
 const Landing = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+  return <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/lovable-uploads/301c97ce-b36d-4b78-9785-16511b858982.png" alt="EnvPRO" className="h-8 w-auto" />
-            <h1 className="text-2xl font-bold text-foreground">EnvPRO</h1>
+            
           </div>
           <Link to="/auth">
             <Button variant="outline">Entrar</Button>
@@ -124,8 +122,6 @@ const Landing = () => {
           <p>&copy; 2025 EnvPRO. Todos os direitos reservados.</p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Landing;
