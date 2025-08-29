@@ -153,11 +153,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             description: "Falha ao criar perfil do usuário. Tente novamente.",
             variant: "destructive",
           });
+          return { error };
         } else {
           toast({
             title: "Cadastro realizado!",
-            description: "Conta criada com sucesso. Você já pode fazer login.",
+            description: "Conta criada com sucesso. Redirecionando...",
           });
+          // Return success to trigger redirect
+          return { error: null };
         }
       } catch (profileError) {
         console.error('Profile creation error:', profileError);

@@ -53,8 +53,10 @@ const Auth = () => {
     setIsLoading(false);
 
     if (!error) {
-      setRegisteredEmail(data.email);
-      setShowEmailVerification(true);
+      // Small delay to ensure user sees the success message
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
     }
   };
 
