@@ -119,19 +119,11 @@ export function UserSettings() {
       console.log('Current user:', currentUser);
       console.log('User ID:', currentUser?.id);
       
-      // Test admin status first
+      // Test admin status using the correct function
       const { data: adminCheck, error: adminError } = await supabase
-        .rpc('has_role', { _user_id: currentUser?.id, _role: 'admin' });
+        .rpc('is_admin', { user_id: currentUser?.id });
       
       console.log('Admin check result:', { adminCheck, adminError });
-      
-      // Also check user_roles directly
-      const { data: userRoles, error: userRolesError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', currentUser?.id);
-        
-      console.log('User roles direct check:', { userRoles, userRolesError });
       
       if (adminError) {
         console.error('Admin check error:', adminError);
@@ -139,7 +131,7 @@ export function UserSettings() {
       }
       
       if (!adminCheck) {
-        throw new Error('Você precisa ter permissões de administrador para enviar convites. User ID: ' + currentUser?.id);
+        throw new Error('Você precisa ter permissões de administrador para enviar convites.');
       }
 
       // Create team invitation
